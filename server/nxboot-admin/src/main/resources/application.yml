@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: nxboot
+  profiles:
+    active: dev
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 8080
+
+nxboot:
+  jwt:
+    secret: ${NXBOOT_JWT_SECRET:change-me-in-production-must-be-at-least-256-bits}
+    expiration: ${NXBOOT_JWT_EXPIRATION:86400000}
+  file:
+    upload-dir: ./uploads

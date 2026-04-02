@@ -1,0 +1,192 @@
+package com.nxboot.system.file.service;
+
+import com.nxboot.common.base.PageQuery;
+import com.nxboot.common.base.PageResult;
+import com.nxboot.common.exception.BusinessException;
+import com.nxboot.common.exception.ErrorCode;
+import com.nxboot.common.util.AssertUtils;
+import com.nxboot.common.util.SnowflakeIdGenerator;
+import com.nxboot.framework.security.SecurityUtils;
+import com.nxboot.system.file.model.FileVO;
+import org.jooq.DSLContext;
+import org.jooq.Record;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.UUID;
+
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.table;
+
+/**
+ * 文件服务
+ */
+@Service
+public class FileService {
+
+    private final DSLContext dsl;
+    private final SnowflakeIdGenerator idGenerator;
+    private final String uploadDir;
+
+    public FileService(DSLContext dsl, SnowflakeIdGenerator idGenerator,
+                       @Value("${nxboot.file.upload-dir}") String uploadDir) {
+        this.dsl = dsl;
+        this.idGenerator = idGenerator;
+        this.uploadDir = uploadDir;
+    }
+
+    /** 文件名最大长度 */
+    private static final int MAX_FILE_NAME_LENGTH = 200;
+
+    /**
+     * 上传文件
+     */
+    @Transactional
+    public FileVO upload(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "上传文件不能为空");
+        }
+
+        String originalName = sanitizeFileName(file.getOriginalFilename());
+        String extension = "";
+        if (originalName.contains(".")) {
+            extension = originalName.substring(originalName.lastIndexOf("."));
+        }
+
+        // 按日期分目录存储
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String fileName = UUID.randomUUID().toString().replace("-", "") + extension;
+        String relativePath = datePath + "/" + fileName;
+
+        Path targetDir = Paths.get(uploadDir, datePath);
+        Path targetFile = Paths.get(uploadDir, relativePath);
+
+        try {
+            Files.createDirectories(targetDir);
+            file.transferTo(targetFile.toFile());
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "文件上传失败: " + e.getMessage());
+        }
+
+        // 保存文件记录
+        Long id = idGenerator.nextId();
+        String operator = SecurityUtils.getCurrentUsername();
+        LocalDateTime now = LocalDateTime.now();
+
+        dsl.insertInto(table("sys_file"))
+                .set(field("id"), id)
+                .set(field("file_name"), fileName)
+                .set(field("original_name"), originalName)
+                .set(field("file_path"), relativePath)
+                .set(field("file_size"), file.getSize())
+                .set(field("file_type"), file.getContentType())
+                .set(field("create_by"), operator)
+                .set(field("create_time"), now)
+                .execute();
+
+        return new FileVO(id, fileName, originalName, relativePath,
+                file.getSize(), file.getContentType(), operator, now);
+    }
+
+    /**
+     * 分页查询文件
+     */
+    public PageResult<FileVO> page(PageQuery query) {
+        long total = dsl.selectCount()
+                .from(table("sys_file"))
+                .fetchOneInto(Long.class);
+
+        if (total == 0) return PageResult.empty();
+
+        List<FileVO> list = dsl.select()
+                .from(table("sys_file"))
+                .orderBy(field("create_time").desc())
+                .offset(query.offset()).limit(query.pageSize())
+                .fetch(this::toVO);
+
+        return PageResult.of(list, total);
+    }
+
+    /**
+     * 根据 ID 查询
+     */
+    public FileVO getById(Long id) {
+        Record r = dsl.select().from(table("sys_file"))
+                .where(field("id").eq(id))
+                .fetchOne();
+        AssertUtils.notNull(r, "文件", id);
+        return toVO(r);
+    }
+
+    /**
+     * 删除文件
+     */
+    @Transactional
+    public void delete(Long id) {
+        Record r = dsl.select().from(table("sys_file"))
+                .where(field("id").eq(id))
+                .fetchOne();
+        AssertUtils.notNull(r, "文件", id);
+
+        // 删除物理文件
+        String filePath = r.get(field("file_path", String.class));
+        try {
+            Files.deleteIfExists(Paths.get(uploadDir, filePath));
+        } catch (IOException e) {
+            // 物理文件删除失败不阻塞记录删除
+        }
+
+        dsl.deleteFrom(table("sys_file"))
+                .where(field("id").eq(id))
+                .execute();
+    }
+
+    /**
+     * 清理文件名：去掉路径穿越字符、非法字符，限制长度
+     */
+    private String sanitizeFileName(String originalName) {
+        if (originalName == null || originalName.isBlank()) {
+            return "unnamed";
+        }
+        // 只保留文件名部分，去掉路径
+        String name = Paths.get(originalName).getFileName().toString();
+        // 去掉非法字符
+        name = name.replaceAll("[\\\\/:*?\"<>|]", "_");
+        if (name.isBlank() || name.equals("..") || name.equals(".")) {
+            return "unnamed";
+        }
+        // 限制文件名长度
+        if (name.length() > MAX_FILE_NAME_LENGTH) {
+            String ext = "";
+            int dotIdx = name.lastIndexOf(".");
+            if (dotIdx > 0) {
+                ext = name.substring(dotIdx);
+            }
+            name = name.substring(0, MAX_FILE_NAME_LENGTH - ext.length()) + ext;
+        }
+        return name;
+    }
+
+    private FileVO toVO(Record r) {
+        return new FileVO(
+                r.get(field("id", Long.class)),
+                r.get(field("file_name", String.class)),
+                r.get(field("original_name", String.class)),
+                r.get(field("file_path", String.class)),
+                r.get(field("file_size", Long.class)),
+                r.get(field("file_type", String.class)),
+                r.get(field("create_by", String.class)),
+                r.get(field("create_time", LocalDateTime.class))
+        );
+    }
+}

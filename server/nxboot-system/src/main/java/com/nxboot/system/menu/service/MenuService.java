@@ -1,0 +1,76 @@
+package com.nxboot.system.menu.service;
+
+import com.nxboot.common.exception.BusinessException;
+import com.nxboot.common.exception.ErrorCode;
+import com.nxboot.common.util.AssertUtils;
+import com.nxboot.framework.security.SecurityUtils;
+import com.nxboot.system.menu.model.MenuCommand;
+import com.nxboot.system.menu.model.MenuVO;
+import com.nxboot.system.menu.repository.MenuRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+/**
+ * 菜单服务
+ */
+@Service
+public class MenuService {
+
+    private final MenuRepository menuRepository;
+
+    public MenuService(MenuRepository menuRepository) {
+        this.menuRepository = menuRepository;
+    }
+
+    /**
+     * 查询菜单树
+     */
+    public List<MenuVO> tree() {
+        return menuRepository.buildTree();
+    }
+
+    /**
+     * 查询所有菜单（平铺）
+     */
+    public List<MenuVO> listAll() {
+        return menuRepository.findAll();
+    }
+
+    public MenuVO getById(Long id) {
+        MenuVO menu = menuRepository.findById(id);
+        AssertUtils.notNull(menu, "菜单", id);
+        return menu;
+    }
+
+    @Transactional
+    public Long create(MenuCommand.Create cmd) {
+        String operator = SecurityUtils.getCurrentUsername();
+        return menuRepository.insert(cmd.parentId(), cmd.menuName(), cmd.menuType(),
+                cmd.path(), cmd.component(), cmd.permission(), cmd.icon(),
+                cmd.sortOrder(), cmd.visible(), cmd.enabled(), operator);
+    }
+
+    @Transactional
+    public void update(Long id, MenuCommand.Update cmd) {
+        AssertUtils.notNull(menuRepository.findById(id), "菜单", id);
+        String operator = SecurityUtils.getCurrentUsername();
+        menuRepository.update(id, cmd.parentId(), cmd.menuName(), cmd.menuType(),
+                cmd.path(), cmd.component(), cmd.permission(), cmd.icon(),
+                cmd.sortOrder(), cmd.visible(), cmd.enabled(), operator);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        AssertUtils.notNull(menuRepository.findById(id), "菜单", id);
+
+        // 检查是否有子菜单
+        if (menuRepository.hasChildren(id)) {
+            throw new BusinessException(ErrorCode.BIZ_REFERENCED, "存在子菜单，无法删除");
+        }
+
+        String operator = SecurityUtils.getCurrentUsername();
+        menuRepository.softDelete(id, operator);
+    }
+}

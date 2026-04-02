@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/nxboot
+    username: postgres
+    password: postgres
+  jooq:
+    sql-dialect: postgres
+
+nxboot:
+  jwt:
+    secret: nxboot-dev-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

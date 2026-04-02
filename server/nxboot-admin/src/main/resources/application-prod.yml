@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/nxboot}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+  jooq:
+    sql-dialect: postgres
+
+# 生产环境关闭 API 文档
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
