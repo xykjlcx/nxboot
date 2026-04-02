@@ -25,7 +25,7 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   fetchUser: async () => {
-    const user = await get<UserInfo>("/api/v1/auth/me");
+    const user = await get<UserInfo>("/api/v1/auth/info");
     set({ user });
   },
 

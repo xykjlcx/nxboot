@@ -75,7 +75,7 @@ public class LogRepository {
                 r.get(field("status", Integer.class)),
                 r.get(field("error_msg", String.class)),
                 r.get(field("duration", Long.class)),
-                r.get(field("create_time", LocalDateTime.class))
+                r.get("create_time", LocalDateTime.class)
         );
     }
 }

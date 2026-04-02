@@ -187,7 +187,7 @@ public class DictRepository {
                 r.get(field("dict_name", String.class)),
                 enabledVal != null && enabledVal == 1,
                 r.get(field("remark", String.class)),
-                r.get(field("create_time", LocalDateTime.class))
+                r.get("create_time", LocalDateTime.class)
         );
     }
 
@@ -201,7 +201,7 @@ public class DictRepository {
                 r.get(field("sort_order", Integer.class)),
                 enabledVal != null && enabledVal == 1,
                 r.get(field("remark", String.class)),
-                r.get(field("create_time", LocalDateTime.class))
+                r.get("create_time", LocalDateTime.class)
         );
     }
 }

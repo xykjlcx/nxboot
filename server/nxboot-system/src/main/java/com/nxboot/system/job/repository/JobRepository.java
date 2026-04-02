@@ -136,7 +136,7 @@ public class JobRepository {
                 r.get(field("concurrent", Integer.class)),
                 enabledVal != null && enabledVal == 1,
                 r.get(field("remark", String.class)),
-                r.get(field("create_time", LocalDateTime.class))
+                r.get("create_time", LocalDateTime.class)
         );
     }
 }

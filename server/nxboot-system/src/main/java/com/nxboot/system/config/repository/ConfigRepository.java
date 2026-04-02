@@ -127,7 +127,7 @@ public class ConfigRepository {
                 r.get(field("config_value", String.class)),
                 r.get(field("config_name", String.class)),
                 r.get(field("remark", String.class)),
-                r.get(field("create_time", LocalDateTime.class))
+                r.get("create_time", LocalDateTime.class)
         );
     }
 }

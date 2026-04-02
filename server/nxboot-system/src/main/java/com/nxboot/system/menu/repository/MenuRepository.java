@@ -179,7 +179,7 @@ public class MenuRepository {
                 r.get(field("sort_order", Integer.class)),
                 visibleVal != null && visibleVal == 1,
                 enabledVal != null && enabledVal == 1,
-                r.get(field("create_time", LocalDateTime.class)),
+                r.get("create_time", LocalDateTime.class),
                 null
         );
     }
