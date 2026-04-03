@@ -7,6 +7,7 @@ interface NxLoadingProps {
 
 /**
  * 统一加载指示器——居中展示，可配置提示文字。
+ * AuthGuard 和 Suspense fallback 共用，确保全局加载风格一致。
  */
 export function NxLoading({ tip = "加载中..." }: NxLoadingProps) {
   return (
@@ -16,6 +17,7 @@ export function NxLoading({ tip = "加载中..." }: NxLoadingProps) {
         justifyContent: "center",
         alignItems: "center",
         padding: 48,
+        minHeight: 200,
       }}
     >
       <Spin tip={tip}>

@@ -1,6 +1,7 @@
 import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
 import { message } from "antd";
 import type { R } from "@/types/api";
+import { useAuth } from "@/shared/hooks/useAuth";
 
 const http = axios.create({
   baseURL: "",
@@ -29,11 +30,9 @@ function processQueue(error: Error | null, token: string | null) {
   failedQueue = [];
 }
 
-/** 清除所有令牌并跳转登录页 */
-function clearTokensAndRedirect() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("refreshToken");
-  window.location.href = "/login";
+/** 清除认证状态并跳转登录页（通过 Zustand store 统一管理） */
+function forceLogout() {
+  useAuth.getState().logout();
 }
 
 // ---------- 拦截器 ----------
@@ -70,13 +69,13 @@ http.interceptors.response.use(
 
     // 刷新接口本身返回 401，直接跳登录
     if (originalConfig?.url === "/api/v1/auth/refresh") {
-      clearTokensAndRedirect();
+      forceLogout();
       return Promise.reject(error);
     }
 
     const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) {
-      clearTokensAndRedirect();
+      forceLogout();
       return Promise.reject(error);
     }
 
@@ -107,7 +106,7 @@ http.interceptors.response.use(
       return http.request(originalConfig!);
     } catch (refreshError) {
       processQueue(new Error("令牌刷新失败"), null);
-      clearTokensAndRedirect();
+      forceLogout();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
