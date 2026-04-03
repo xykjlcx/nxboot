@@ -13,8 +13,8 @@
 | 层 | 技术 |
 |---|---|
 | 后端 | JDK 21 + Spring Boot 3.4 + jOOQ + PostgreSQL + Flyway + JWT (JJWT) + SpringDoc |
-| 前端 | Vite + React 18 + TypeScript strict + Ant Design + AG Grid + TanStack Query + Zustand |
-| 样式 | Ant Design Token + CSS Modules + CSS 变量 |
+| 前端 | Vite + React 18 + TypeScript strict + Ant Design 6 + TanStack Query + Zustand |
+| 样式 | CSS Modules + CSS 变量（`tokens.css`） |
 | 规范 | Biome (lint + format)，pnpm |
 
 ## 项目结构
@@ -29,18 +29,153 @@ nxboot/
 └── client/                          ← 前端
     └── src/
         ├── app/                     ← 应用壳（路由/布局/请求/权限守卫）
+        │   ├── layouts/             ← BasicLayout（三级导航）+ BlankLayout
+        │   ├── routes.tsx           ← 路由配置
+        │   ├── request.ts           ← Axios 封装
+        │   ├── auth-guard.tsx       ← 登录守卫
+        │   └── Placeholder.tsx      ← 占位页面
         ├── features/system/         ← 业务模块（与后端领域 1:1 对应）
-        ├── shared/                  ← 共享组件和 hooks
-        └── types/                   ← 全局类型
+        ├── shared/                  ← 共享组件（NxTable/NxBar/NxDrawer/NxFilter/NxLoading）和 hooks
+        └── types/                   ← 全局类型（R<T>/PageResult/PageQuery）
 ```
+
+## 前端布局架构（三级导航）
+
+```
+子系统（九宫格切换）→ 模块（Header Tab）→ 页面（左侧 Sider 菜单）
+```
+
+- **九宫格切换**：左上角 AppstoreOutlined 图标，Popover 弹出子系统卡片
+- **Header Tab**：圆角矩形 pill 按钮，蓝底白字表示当前模块
+- **Sider 菜单**：白底、贴边、选中项浅蓝底 + 左侧蓝色指示条、底部折叠按钮
+- **面包屑**：内容区顶部，自动根据三级导航配置生成
+
+子系统/模块/菜单配置在 `BasicLayout.tsx` 的 `subsystems` 数组中。新增子系统或模块只需修改这个配置 + 添加对应路由。
+
+## 共享组件
+
+| 组件 | 路径 | 职责 |
+|------|------|------|
+| NxTable | `shared/components/NxTable/` | 表格抽象层，自有 `NxColumn<T>` 类型，屏蔽底层引擎（当前 Ant Design Table，后续可切 AG Grid） |
+| NxBar | `shared/components/NxBar/` | 操作栏容器，`left`/`right` 插槽统一工具栏布局 |
+| NxDrawer | `shared/components/NxDrawer/` | 抽屉组件（compound pattern: Root/Trigger/Content/useContext），支持全屏切换、骨架屏 loading |
+| NxFilter | `shared/components/NxFilter/` | 搜索栏，延迟搜索 + 筛选计数 badge |
+| NxLoading | `shared/components/NxLoading/` | 统一加载指示器，Suspense fallback 标准组件 |
+| NxForm | `shared/components/NxForm/` | Schema-Driven 表单，10 种组件类型，动态显隐，栅格布局 |
+| ApiSelect | `shared/components/ApiSelect/` | 远程数据源 Select，带 loading、搜索、内存缓存 |
+
+### NxTable 关键约定
+- 列定义用 `NxColumn<T>`（`field` 而非 `dataIndex`），操作列 `field: "_action"`
+- 默认 `size="small"`（紧凑行高），默认 `rowKey="id"`
+- 分页内置 showSizeChanger/showQuickJumper/showTotal，页面只需传 current/pageSize/total/onChange
+- 空数据自动显示"暂无数据"
+
+### 共享 Hooks
+
+| Hook | 路径 | 职责 |
+|------|------|------|
+| useAuth | `shared/hooks/useAuth.ts` | Zustand 认证状态（token/user/login/logout） |
+| usePerm | `shared/hooks/usePerm.ts` | 权限判断 `has("system:user:create")` |
+| useDict | `shared/hooks/useDict.ts` | 字典数据查询（5 分钟缓存），提供 `labelOf()`、`options` |
+| useTheme | `shared/hooks/useTheme.ts` | 主题切换（light/dark），持久化 localStorage |
+| useGuardedSubmit | `shared/hooks/useRequest.ts` | 防重复提交，返回 `[execute, loading]` |
+
+### 共享工具
+
+| 工具 | 路径 | 职责 |
+|------|------|------|
+| downloadBlob | `shared/utils/download.ts` | Blob 文件下载 |
+
+### Preferences 偏好系统
+
+- `shared/stores/preferences.ts` — Zustand + persist 持久化到 localStorage
+- 3 种布局模式：`mix`（混合导航，默认）、`sidebar`（经典左侧）、`top`（顶部水平菜单）
+- 可配置项：sidebarWidth、headerHeight、colorPrimary（联动 Ant Design）、headerBgColor、showBreadcrumb、contentBorderRadius
+- `usePreferences()` hook 读写配置
+
+### Token 刷新
+
+- 后端签发 access token（24h）+ refresh token（7d）
+- 前端 401 时自动用 refresh token 刷新，并发请求排队等待新 token
+- 刷新失败才跳登录页
+
+### 动态菜单
+
+- `GET /api/v1/auth/menus` 返回当前用户基于角色权限过滤的菜单树
+- admin 角色返回所有 M/C 类型菜单，非 admin 按 role_menu 过滤
+- 前端 `menusToSubsystems()` 将后端菜单树转为三级导航配置
+- 图标字段存 Ant Design 图标名（如 `UserOutlined`），前端自动映射
+
+### 暗色模式（TokenBridge 架构）
+
+- **TokenBridge** 组件将 Ant Design 主题令牌自动同步到 CSS 自定义属性
+- tokens.css 中不需要手动维护暗色值——antd darkAlgorithm 统一派生
+- `useTheme()` hook 管理切换，Header 用户下拉菜单有切换入口
+- `<App>` 组件包裹确保 message/modal/notification 继承主题
+- 支持系统偏好自动检测
+
+### 数据权限（@DataScope）
+
+- `@DataScope` 注解标注在 Service 查询方法上
+- AOP 切面根据当前用户角色的 `data_scope` 构建 jOOQ Condition，通过 ThreadLocal 传递
+- Repository 调用 `JooqHelper.dataScopeCondition()` 获取并拼接条件
+- 5 种粒度：1=全部、2=自定义部门、3=本部门、4=本部门及下级、5=仅本人
+- admin 角色（`*:*:*`）自动跳过数据权限
+
+### 操作日志
+
+- 后端 Controller 写操作加 `@Log(module = "xxx", operation = "xxx")` 注解
+- `AccessLogInterceptor` 自动拦截、记录请求信息并写入 sys_operation_log 表
+- 日志记录包含：模块、操作、请求 URL/方法/参数、操作人、IP、耗时、异常信息
+
+### jOOQ 工具（JooqHelper）
+
+- `JooqHelper.page()` — 通用分页查询（自动加 deleted=0 + 按 create_time 排序）
+- `JooqHelper.findById()` — 按 ID 查询（自动加 deleted=0）
+- `JooqHelper.softDelete()` — 逻辑删除（自动填充 update_by/update_time）
+- `JooqHelper.keywordCondition()` — 多字段关键词模糊搜索条件构建
+- `JooqHelper.notDeleted()` — 未删除条件
+- `JooqHelper.setAuditInsert()` — INSERT 审计字段一行填充（id + create/update + deleted）
+- `JooqHelper.setAuditUpdate()` — UPDATE 审计字段一行填充（update_by + update_time）
+- `JooqHelper.optimisticUpdate()` — 乐观锁更新（version 不匹配抛异常）
+- `JooqHelper.dataScopeCondition()` — 读取 @DataScope AOP 注入的数据权限条件
+
+### 在线用户管理
+
+- `TokenBlacklist` — 内存版 JWT 黑名单（ConcurrentHashMap），强制下线后 token 立即失效
+- `OnlineUserService` — 在线用户追踪（登录注册、列表查询、强制下线）
+- `JwtAuthenticationFilter` 每次请求检查黑名单
+- 前端 `/system/online` 页面，30s 自动刷新
+
+### 服务器监控
+
+- `GET /api/v1/system/monitor/server` — OSHI 库获取 CPU/内存/磁盘/JVM 信息
+- 权限：`system:monitor:list`
+
+### 定时任务执行历史
+
+- `sys_job_log` 表记录每次任务执行的开始/结束/耗时/状态/异常
+- 前端 `/system/job-log` 页面，支持按任务和状态筛选
+
+### 慢查询日志
+
+- `SlowQueryListener` 注册在 jOOQ 配置中，记录 >500ms 的 SQL
+- 开发环境 `org.jooq.tools.LoggerListener: DEBUG` 输出全部 SQL
+
+### 文件存储（FileStorage 接口）
+
+- `FileStorage` 接口屏蔽存储后端差异（本地/OSS/S3）
+- 当前实现：`LocalFileStorage`（本地磁盘）
+- 切换配置：`nxboot.file.storage-type=local|oss`
+- 扩展 OSS：引入 SDK + 实现 `OssFileStorage` + 在 `FileStorageConfig` 注册
 
 ## 模块职责
 
 | 模块 | 职责 | 依赖 |
 |------|------|------|
 | nxboot-common | 工具类、常量、异常、R\<T\>、PageQuery/PageResult、SnowflakeId | 无（零 Spring 依赖） |
-| nxboot-framework | Spring Security + JWT、jOOQ 配置、全局异常处理、CORS、限流、Jackson | common |
-| nxboot-system | 9 个领域包：auth/user/role/menu/dict/config/log/file/job | framework |
+| nxboot-framework | Security/JWT、jOOQ/JooqHelper、CORS、限流、XSS 过滤、MDC 追踪、@Async 线程池、FileStorage | common |
+| nxboot-system | 11 个领域包：auth/user/role/menu/dept/dict/config/log/file/job/monitor + online 子模块 | framework |
 | nxboot-admin | NxBootApplication 启动类 + Flyway 迁移脚本 + 多环境配置 | system |
 
 依赖方向：**admin → system → framework → common**（单向，禁止反向依赖）
@@ -73,8 +208,6 @@ notice/
 V12__create_notice.sql
 ```
 
-在 `V11__init_data.sql` 或新的迁移脚本中插入菜单和权限数据。
-
 ### 前端（5 个文件）
 
 在 `client/src/features/system/` 下新建：
@@ -83,13 +216,14 @@ V12__create_notice.sql
 notice/
 ├── types.ts              ← NoticeVO、NoticeCommand（与后端对称）
 ├── api.ts                ← useNotices、useCreateNotice、useUpdateNotice、useDeleteNotice
-├── columns.tsx           ← AG Grid 列定义
+├── columns.tsx           ← 列定义（NxColumn<NoticeVO>[]）
 └── pages/
-    ├── NoticeList.tsx     ← 列表页（搜索 + AG Grid + 权限按钮）
+    ├── NoticeList.tsx     ← 列表页（NxFilter + 工具栏 + Table + 权限按钮）
     └── NoticeForm.tsx     ← Drawer 表单（新增/编辑切换）
 ```
 
 在 `client/src/app/routes.tsx` 中添加路由。
+在 `client/src/app/layouts/BasicLayout.tsx` 的 `subsystems` 配置中添加菜单项。
 
 ### 核心模式参考
 
@@ -146,42 +280,38 @@ public final class UserCommand {
 
 ## jOOQ 使用规范
 
-当前版本使用 `DSL.field()` / `DSL.table()` 字符串引用。后续启用 codegen 后将切换到类型安全的生成类。
+已启用 jOOQ codegen，生成的类型安全引用在 `com.nxboot.generated.jooq`。新代码使用 codegen 引用，现有字符串引用逐步迁移。
 
-### 查询（投影到 VO）
+### codegen 生成
 
-```java
-public PageResult<UserVO> page(PageQuery pageQuery, String keyword) {
-    var table = DSL.table("sys_user");
-    var where = DSL.field("deleted", Boolean.class).eq(false);
-    if (keyword != null && !keyword.isBlank()) {
-        where = where.and(DSL.field("username").likeIgnoreCase("%" + keyword + "%"));
-    }
-    long total = dsl.selectCount().from(table).where(where).fetchOne(0, long.class);
-    List<UserVO> list = dsl.select(...)
-        .from(table).where(where)
-        .offset(pageQuery.offset()).limit(pageQuery.pageSize())
-        .fetch(r -> new UserVO(...));
-    return PageResult.of(list, total);
-}
+```bash
+cd server && mvn generate-sources -P codegen -pl nxboot-admin
 ```
 
-### 写入
+详见 `server/CODEGEN.md`。
+
+### 类型安全引用（推荐）
 
 ```java
-public Long insert(String username, String encodedPassword) {
-    long id = snowflakeIdGenerator.nextId();
-    dsl.insertInto(DSL.table("sys_user"))
-        .set(DSL.field("id", Long.class), id)
-        .set(DSL.field("username"), username)
-        .set(DSL.field("password"), encodedPassword)
-        // 审计字段手动填充
-        .set(DSL.field("create_by"), SecurityUtils.getCurrentUsername())
-        .set(DSL.field("create_time", LocalDateTime.class), LocalDateTime.now())
-        .set(DSL.field("deleted", Boolean.class), false)
-        .execute();
-    return id;
-}
+import static com.nxboot.generated.jooq.tables.SysConfig.SYS_CONFIG;
+
+// 表引用
+dsl.select().from(SYS_CONFIG)
+
+// 字段引用（编译期类型检查）
+SYS_CONFIG.CONFIG_KEY.eq(key)
+
+// 读取字段值（无需手动指定类型）
+r.get(SYS_CONFIG.ID)
+r.get(SYS_CONFIG.CREATE_TIME)
+```
+
+### 字符串引用（旧代码，逐步迁移中）
+
+```java
+// 仍可工作，但不推荐新代码使用
+dsl.select().from(table("sys_config")).where(field("config_key").eq(key))
+r.get("create_time", LocalDateTime.class)
 ```
 
 ### 审计字段
@@ -190,26 +320,45 @@ public Long insert(String username, String encodedPassword) {
 
 ## 前端开发规范
 
-### API 层（TanStack Query）
+### 列定义（NxColumn）
 
-```typescript
-// features/system/xxx/api.ts
-const KEYS = { list: ['system', 'xxx'] as const };
+```tsx
+// features/system/xxx/columns.tsx
+import type { NxColumn } from "@/shared/components/NxTable";
+import dayjs from "dayjs";
 
-export function useXxxList(params?: PageQuery & { keyword?: string }) {
-  return useQuery({
-    queryKey: [...KEYS.list, params],
-    queryFn: () => get<PageResult<XxxVO>>('/api/v1/system/xxxs', params),
-  });
-}
+export const xxxColumns: NxColumn<XxxVO>[] = [
+  { field: "name", title: "名称", width: 150 },
+  {
+    field: "enabled",
+    title: "状态",
+    width: 90,
+    render: (v: boolean) => <Tag color={v ? "success" : "error"}>{v ? "正常" : "停用"}</Tag>,
+  },
+  {
+    field: "createTime",
+    title: "创建时间",
+    width: 170,
+    render: (v: string) => v ? dayjs(v).format("YYYY-MM-DD HH:mm:ss") : "-",
+  },
+];
+```
 
-export function useCreateXxx() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: XxxCommand.Create) => post('/api/v1/system/xxxs', data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.list }),
-  });
-}
+**注意**：使用 `NxColumn` 而非 antd 的 `ColumnsType`，字段名用 `field` 而非 `dataIndex`。操作列 field 用 `"_action"`。
+
+### 列表页模式
+
+```tsx
+// 标准列表页结构
+<NxDrawer.Root>
+  <NxFilter ... />                          {/* 搜索栏 */}
+  <NxBar
+    left={<Button type="primary">新增</Button>}
+    right={<Button icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>}
+  />
+  <NxTable columns={columns} data={list} loading={isLoading} pagination={{...}} />
+  <NxDrawer.Content title="..."><XxxForm /></NxDrawer.Content>
+</NxDrawer.Root>
 ```
 
 ### 权限控制
@@ -225,13 +374,26 @@ const { has } = usePerm();
 
 | 场景 | 组件选择 |
 |------|---------|
-| 普通列表页（用户/角色/配置/日志/文件/任务） | AG Grid (NxTable) + columns.tsx |
-| 树形结构（菜单） | Ant Design Table expandable |
-| 主从关系（字典类型+数据） | Ant Design List/Table 左右分栏 |
+| 普通列表页（用户/角色/配置/日志/文件/任务） | NxTable + columns.tsx |
+| 树形结构（菜单） | NxTable expandable |
+| 主从关系（字典类型+数据） | Ant Design List 左右分栏 |
 
 ### 请求封装
 
 `src/app/request.ts` 导出 `get<T>`, `post<T>`, `put<T>`, `del<T>` 四个函数，自动解包 `R<T>`，直接返回 `data`。401 自动跳登录页。
+
+### CSS 变量（tokens.css）
+
+```css
+--color-primary: #1677ff;
+--color-primary-bg: #e6f4ff;
+--color-primary-border: #91caff;
+--color-header-bg: #2563eb;
+--color-bg-page: #f5f5f5;
+--color-border: #f0f0f0;
+```
+
+布局组件中使用 CSS 变量而非硬编码颜色。
 
 ---
 
@@ -241,16 +403,15 @@ const { has } = usePerm();
 
 ```bash
 cd server
-mvn clean package -DskipTests                    # 构建
-java -jar nxboot-admin/target/nxboot-admin.jar --spring.profiles.active=dev  # 运行（开发）
-java -jar nxboot-admin/target/nxboot-admin.jar --spring.profiles.active=prod # 运行（生产）
+mvn clean package -DskipTests
+java -jar nxboot-admin/target/nxboot-admin.jar --spring.profiles.active=dev
 ```
 
 ### 前端
 
 ```bash
 cd client
-pnpm install    # 安装依赖
+pnpm install
 pnpm dev        # 开发服务器（代理 /api → localhost:8080）
 pnpm build      # 生产构建
 ```
@@ -263,6 +424,9 @@ pnpm build      # 生产构建
 | `DB_URL` | PostgreSQL 连接地址 |
 | `DB_USERNAME` | 数据库用户名 |
 | `DB_PASSWORD` | 数据库密码 |
+| `nxboot.cors.allowed-origins` | CORS 允许的域名（逗号分隔，默认 `*`） |
+| `nxboot.file.storage-type` | 文件存储类型：`local`（默认）或 `oss` |
+| `nxboot.file.upload-dir` | 本地存储路径（默认 `./uploads`） |
 
 ---
 
@@ -274,13 +438,16 @@ pnpm build      # 生产构建
 - **不要**用 Lombok（用 JDK Record）
 - **不要**用 MapStruct（jOOQ fetchInto 或手动构造）
 - **不要**在前端用 `any` 类型
-- **不要**硬编码颜色/间距值（用 Design Tokens CSS 变量）
+- **不要**硬编码颜色/间距值（用 CSS 变量）
 - **不要**绕过 `request.ts` 直接用 axios
 - **不要**在 commit 中包含 `application-prod.yml` 的真实密码
 
-## 已知限制（v1.0）
+## 已知限制（v8.0）
 
-- jOOQ 使用字符串引用（`DSL.field()`），未启用 codegen 类型安全。后续迭代将启用
-- 审计字段需手动填充（启用 codegen 后可恢复 RecordListener 自动填充）
-- 操作日志只有查询壳子，未实现写入（缺 AccessLogInterceptor）
-- CorsConfig 允许所有来源（生产环境需修改为具体域名）
+- jOOQ codegen 已启用，但仅 ConfigRepository 完成迁移（POC），其他 Repository 和 JooqHelper 待迁移
+- 审计字段需手动填充（已有 JooqHelper 简化，启用 codegen 后可自动化）
+- 无代码生成器
+- 无单元测试
+- 无 EasyExcel 数据导出
+- 无 Redis 缓存层
+- 图标全量导入（`import * as Icons`），后续需优化 tree-shaking
