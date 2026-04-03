@@ -76,7 +76,7 @@ export default function FileList() {
 
       <NxBar
         left={
-          has("system:file:create") && (
+          has("system:file:upload") && (
             <Upload {...uploadProps}>
               <Button icon={<UploadOutlined />} type="primary">上传文件</Button>
             </Upload>
