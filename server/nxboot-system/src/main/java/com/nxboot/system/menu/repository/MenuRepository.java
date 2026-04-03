@@ -14,16 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysMenu.SYS_MENU;
+import static com.nxboot.generated.jooq.tables.SysRole.SYS_ROLE;
+import static com.nxboot.generated.jooq.tables.SysRoleMenu.SYS_ROLE_MENU;
+import static com.nxboot.generated.jooq.tables.SysUserRole.SYS_USER_ROLE;
 
 /**
  * 菜单数据访问
  */
 @Repository
 public class MenuRepository {
-
-    private static final String TABLE = "sys_menu";
 
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
@@ -38,9 +38,9 @@ public class MenuRepository {
      */
     public List<MenuVO> findAll() {
         return dsl.select()
-                .from(table(TABLE))
+                .from(SYS_MENU)
                 .where(JooqHelper.notDeleted())
-                .orderBy(field("sort_order").asc())
+                .orderBy(SYS_MENU.SORT_ORDER.asc())
                 .fetch(r -> toVO(r));
     }
 
@@ -59,29 +59,29 @@ public class MenuRepository {
         // 判断是否为管理员
         boolean isAdmin = dsl.fetchExists(
                 dsl.selectOne()
-                        .from(table("sys_user_role"))
-                        .join(table("sys_role")).on(field("sys_user_role.role_id").eq(field("sys_role.id")))
-                        .where(field("sys_user_role.user_id").eq(userId))
-                        .and(field("sys_role.role_key").eq(Constants.ROLE_ADMIN))
-                        .and(field("sys_role.deleted").eq(Constants.NOT_DELETED))
+                        .from(SYS_USER_ROLE)
+                        .join(SYS_ROLE).on(SYS_USER_ROLE.ROLE_ID.eq(SYS_ROLE.ID))
+                        .where(SYS_USER_ROLE.USER_ID.eq(userId))
+                        .and(SYS_ROLE.ROLE_KEY.eq(Constants.ROLE_ADMIN))
+                        .and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
         );
 
         List<MenuVO> menus;
         if (isAdmin) {
             // 管理员：返回所有目录和菜单（排除按钮）
             menus = dsl.select()
-                    .from(table(TABLE))
+                    .from(SYS_MENU)
                     .where(JooqHelper.notDeleted())
-                    .and(field("menu_type").ne("F"))
-                    .and(field("enabled").eq(Constants.ENABLED))
-                    .orderBy(field("sort_order").asc())
+                    .and(SYS_MENU.MENU_TYPE.ne("F"))
+                    .and(SYS_MENU.ENABLED.eq(Constants.ENABLED))
+                    .orderBy(SYS_MENU.SORT_ORDER.asc())
                     .fetch(this::toVO);
         } else {
             // 非管理员：先查角色关联的菜单 ID，再查菜单
-            List<Long> menuIds = dsl.selectDistinct(field("menu_id", Long.class))
-                    .from(table("sys_role_menu"))
-                    .join(table("sys_user_role")).on(field("sys_role_menu.role_id").eq(field("sys_user_role.role_id")))
-                    .where(field("sys_user_role.user_id").eq(userId))
+            List<Long> menuIds = dsl.selectDistinct(SYS_ROLE_MENU.MENU_ID)
+                    .from(SYS_ROLE_MENU)
+                    .join(SYS_USER_ROLE).on(SYS_ROLE_MENU.ROLE_ID.eq(SYS_USER_ROLE.ROLE_ID))
+                    .where(SYS_USER_ROLE.USER_ID.eq(userId))
                     .fetchInto(Long.class);
 
             if (menuIds.isEmpty()) {
@@ -89,12 +89,12 @@ public class MenuRepository {
             }
 
             menus = dsl.select()
-                    .from(table(TABLE))
-                    .where(field("id").in(menuIds))
+                    .from(SYS_MENU)
+                    .where(SYS_MENU.ID.in(menuIds))
                     .and(JooqHelper.notDeleted())
-                    .and(field("menu_type").ne("F"))
-                    .and(field("enabled").eq(Constants.ENABLED))
-                    .orderBy(field("sort_order").asc())
+                    .and(SYS_MENU.MENU_TYPE.ne("F"))
+                    .and(SYS_MENU.ENABLED.eq(Constants.ENABLED))
+                    .orderBy(SYS_MENU.SORT_ORDER.asc())
                     .fetch(this::toVO);
         }
 
@@ -105,7 +105,7 @@ public class MenuRepository {
      * 根据 ID 查询
      */
     public MenuVO findById(Long id) {
-        Record record = JooqHelper.findById(dsl, TABLE, id);
+        Record record = JooqHelper.findById(dsl, SYS_MENU, id);
         return record != null ? toVO(record) : null;
     }
 
@@ -118,23 +118,23 @@ public class MenuRepository {
         Long id = idGenerator.nextId();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table(TABLE))
-                .set(field("id"), id)
-                .set(field("parent_id"), parentId != null ? parentId : 0L)
-                .set(field("menu_name"), menuName)
-                .set(field("menu_type"), menuType)
-                .set(field("path"), path)
-                .set(field("component"), component)
-                .set(field("permission"), permission)
-                .set(field("icon"), icon)
-                .set(field("sort_order"), sortOrder != null ? sortOrder : 0)
-                .set(field("visible"), visible != null ? visible : 1)
-                .set(field("enabled"), enabled != null ? enabled : 1)
-                .set(field("create_by"), operator)
-                .set(field("create_time"), now)
-                .set(field("update_by"), operator)
-                .set(field("update_time"), now)
-                .set(field("deleted"), Constants.NOT_DELETED)
+        dsl.insertInto(SYS_MENU)
+                .set(SYS_MENU.ID, id)
+                .set(SYS_MENU.PARENT_ID, parentId != null ? parentId : 0L)
+                .set(SYS_MENU.MENU_NAME, menuName)
+                .set(SYS_MENU.MENU_TYPE, menuType)
+                .set(SYS_MENU.PATH, path)
+                .set(SYS_MENU.COMPONENT, component)
+                .set(SYS_MENU.PERMISSION, permission)
+                .set(SYS_MENU.ICON, icon)
+                .set(SYS_MENU.SORT_ORDER, sortOrder != null ? sortOrder : 0)
+                .set(SYS_MENU.VISIBLE, visible != null ? visible : 1)
+                .set(SYS_MENU.ENABLED, enabled != null ? enabled : 1)
+                .set(SYS_MENU.CREATE_BY, operator)
+                .set(SYS_MENU.CREATE_TIME, now)
+                .set(SYS_MENU.UPDATE_BY, operator)
+                .set(SYS_MENU.UPDATE_TIME, now)
+                .set(SYS_MENU.DELETED, Constants.NOT_DELETED)
                 .execute();
 
         return id;
@@ -146,29 +146,29 @@ public class MenuRepository {
     public void update(Long id, Long parentId, String menuName, String menuType, String path,
                        String component, String permission, String icon,
                        Integer sortOrder, Integer visible, Integer enabled, String operator) {
-        var step = dsl.update(table(TABLE))
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now());
+        var step = dsl.update(SYS_MENU)
+                .set(SYS_MENU.UPDATE_BY, operator)
+                .set(SYS_MENU.UPDATE_TIME, LocalDateTime.now());
 
-        if (parentId != null) step = step.set(field("parent_id"), parentId);
-        if (menuName != null) step = step.set(field("menu_name"), menuName);
-        if (menuType != null) step = step.set(field("menu_type"), menuType);
-        if (path != null) step = step.set(field("path"), path);
-        if (component != null) step = step.set(field("component"), component);
-        if (permission != null) step = step.set(field("permission"), permission);
-        if (icon != null) step = step.set(field("icon"), icon);
-        if (sortOrder != null) step = step.set(field("sort_order"), sortOrder);
-        if (visible != null) step = step.set(field("visible"), visible);
-        if (enabled != null) step = step.set(field("enabled"), enabled);
+        if (parentId != null) step = step.set(SYS_MENU.PARENT_ID, parentId);
+        if (menuName != null) step = step.set(SYS_MENU.MENU_NAME, menuName);
+        if (menuType != null) step = step.set(SYS_MENU.MENU_TYPE, menuType);
+        if (path != null) step = step.set(SYS_MENU.PATH, path);
+        if (component != null) step = step.set(SYS_MENU.COMPONENT, component);
+        if (permission != null) step = step.set(SYS_MENU.PERMISSION, permission);
+        if (icon != null) step = step.set(SYS_MENU.ICON, icon);
+        if (sortOrder != null) step = step.set(SYS_MENU.SORT_ORDER, sortOrder);
+        if (visible != null) step = step.set(SYS_MENU.VISIBLE, visible);
+        if (enabled != null) step = step.set(SYS_MENU.ENABLED, enabled);
 
-        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_MENU.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     /**
      * 逻辑删除
      */
     public void softDelete(Long id, String operator) {
-        JooqHelper.softDelete(dsl, TABLE, id, operator);
+        JooqHelper.softDelete(dsl, SYS_MENU, id, operator);
     }
 
     /**
@@ -177,8 +177,8 @@ public class MenuRepository {
     public boolean hasChildren(Long parentId) {
         return dsl.fetchExists(
                 dsl.selectOne()
-                        .from(table(TABLE))
-                        .where(field("parent_id").eq(parentId))
+                        .from(SYS_MENU)
+                        .where(SYS_MENU.PARENT_ID.eq(parentId))
                         .and(JooqHelper.notDeleted())
         );
     }
@@ -206,21 +206,21 @@ public class MenuRepository {
     }
 
     private MenuVO toVO(Record r) {
-        Integer visibleVal = r.get("visible", Integer.class);
-        Integer enabledVal = r.get("enabled", Integer.class);
+        Integer visibleVal = r.get(SYS_MENU.VISIBLE);
+        Integer enabledVal = r.get(SYS_MENU.ENABLED);
         return new MenuVO(
-                r.get("id", Long.class),
-                r.get("parent_id", Long.class),
-                r.get("menu_name", String.class),
-                r.get("menu_type", String.class),
-                r.get("path", String.class),
-                r.get("component", String.class),
-                r.get("permission", String.class),
-                r.get("icon", String.class),
-                r.get("sort_order", Integer.class),
+                r.get(SYS_MENU.ID),
+                r.get(SYS_MENU.PARENT_ID),
+                r.get(SYS_MENU.MENU_NAME),
+                r.get(SYS_MENU.MENU_TYPE),
+                r.get(SYS_MENU.PATH),
+                r.get(SYS_MENU.COMPONENT),
+                r.get(SYS_MENU.PERMISSION),
+                r.get(SYS_MENU.ICON),
+                r.get(SYS_MENU.SORT_ORDER),
                 visibleVal != null && visibleVal == 1,
                 enabledVal != null && enabledVal == 1,
-                r.get("create_time", LocalDateTime.class),
+                r.get(SYS_MENU.CREATE_TIME),
                 null
         );
     }

@@ -17,12 +17,7 @@ import static com.nxboot.generated.jooq.tables.SysConfig.SYS_CONFIG;
 /**
  * 系统配置数据访问
  *
- * 已迁移至 jOOQ codegen 类型安全引用（POC 示例）。
- * 迁移前后对照：
- *   table("sys_config")         → SYS_CONFIG
- *   field("config_key")         → SYS_CONFIG.CONFIG_KEY
- *   field("id")                 → SYS_CONFIG.ID
- *   r.get("id", Long.class)    → r.get(SYS_CONFIG.ID)
+ * 已迁移至 jOOQ codegen 类型安全引用。
  */
 @Repository
 public class ConfigRepository {
@@ -36,12 +31,12 @@ public class ConfigRepository {
     }
 
     public PageResult<ConfigVO> page(int offset, int size, String keyword) {
-        Condition extra = JooqHelper.keywordCondition(keyword, "config_key", "config_name");
-        return JooqHelper.page(dsl, "sys_config", extra, offset, size, this::toVO);
+        Condition extra = JooqHelper.keywordCondition(keyword, SYS_CONFIG.CONFIG_KEY, SYS_CONFIG.CONFIG_NAME);
+        return JooqHelper.page(dsl, SYS_CONFIG, extra, offset, size, this::toVO);
     }
 
     public ConfigVO findById(Long id) {
-        Record r = JooqHelper.findById(dsl, "sys_config", id);
+        Record r = JooqHelper.findById(dsl, SYS_CONFIG, id);
         return r != null ? toVO(r) : null;
     }
 
@@ -95,7 +90,7 @@ public class ConfigRepository {
     }
 
     public void softDelete(Long id, String operator) {
-        JooqHelper.softDelete(dsl, "sys_config", id, operator);
+        JooqHelper.softDelete(dsl, SYS_CONFIG, id, operator);
     }
 
     private ConfigVO toVO(Record r) {
