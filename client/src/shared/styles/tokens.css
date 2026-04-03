@@ -1,3 +1,11 @@
+/* 全局 reset */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 :root {
   /* spacing */
   --spacing-xs: 4px;
@@ -6,17 +14,71 @@
   --spacing-lg: 16px;
   --spacing-xl: 24px;
 
-  /* color */
+  /*
+   * 颜色变量由 TokenBridge 从 Ant Design 主题令牌自动同步。
+   * 下方为初始值（防止 TokenBridge 未加载时的闪烁）。
+   * 暗色模式不需要 [data-theme="dark"] 手动覆写——antd darkAlgorithm 会自动派生。
+   */
+
+  /* color — 主色 */
+  --color-primary: #1677ff;
+  --color-primary-bg: #e6f4ff;
+  --color-primary-border: #91caff;
+
+  /* color — 中性色 */
   --color-bg-page: #f5f5f5;
   --color-bg-card: #fff;
+  --color-bg-elevated: #fafafa;
   --color-border: #f0f0f0;
   --color-text-primary: rgba(0, 0, 0, 0.88);
   --color-text-secondary: rgba(0, 0, 0, 0.65);
 
+  /* color — 布局（不由 TokenBridge 管理的特殊变量） */
+  --color-header-bg: #2563eb;
+
+  /* color — 功能色 */
+  --color-bg-pre: #f5f5f5;
+  --color-bg-pre-error: #fff2f0;
+  --color-text-error: #ff4d4f;
+
+  /* 阴影 */
+  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+  --shadow-login-card: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+
   /* radius */
   --radius-base: 6px;
   --radius-lg: 8px;
+}
 
-  /* shadow */
-  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+/* 暗色模式：仅覆写 TokenBridge 不管理的变量 */
+[data-theme="dark"] {
+  --color-header-bg: #141414;
+  --shadow-login-card: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
 }
