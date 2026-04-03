@@ -5,8 +5,51 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NxBoot</title>
+    <style>
+      /* 全局加载页——React 加载前由浏览器直接渲染，AuthGuard 完成后移除 */
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f5f7fa;
+        z-index: 9999;
+        transition: opacity 0.3s ease;
+      }
+      #app-loading.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-cube {
+        width: 40px;
+        height: 40px;
+        background: #2563eb;
+        border-radius: 8px;
+        animation: cube-rotate 1.2s ease-in-out infinite;
+        box-shadow: 0 12px 24px -8px rgba(37, 99, 235, 0.35);
+      }
+      .loading-title {
+        margin-top: 24px;
+        font-size: 20px;
+        font-weight: 600;
+        color: #1f2937;
+        letter-spacing: 2px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      @keyframes cube-rotate {
+        0% { transform: perspective(200px) rotateX(0deg) rotateY(0deg); }
+        50% { transform: perspective(200px) rotateX(180deg) rotateY(0deg); }
+        100% { transform: perspective(200px) rotateX(180deg) rotateY(180deg); }
+      }
+    </style>
   </head>
   <body>
+    <div id="app-loading">
+      <div class="loading-cube"></div>
+      <div class="loading-title">NxBoot</div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

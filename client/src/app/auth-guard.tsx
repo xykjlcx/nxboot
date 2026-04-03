@@ -3,7 +3,14 @@ import { Navigate, Outlet } from "react-router-dom";
 import { Result, Button } from "antd";
 import axios from "axios";
 import { useAuth } from "@/shared/hooks/useAuth";
-import { NxLoading } from "@/shared/components/NxLoading";
+
+/** 移除 index.html 中的全局加载页（带 fade-out 动画） */
+function dismissGlobalLoading() {
+  const el = document.getElementById("app-loading");
+  if (!el) return;
+  el.classList.add("fade-out");
+  setTimeout(() => el.remove(), 300);
+}
 
 /** 路由守卫：未登录跳 /login，已登录但未加载用户信息则 fetchUser + fetchMenus */
 export function AuthGuard() {
@@ -20,7 +27,7 @@ export function AuthGuard() {
   const loadAuth = useCallback(() => {
     setLoadError(null);
     Promise.all([fetchUser(), fetchMenus()]).catch((err) => {
-      // 页面刷新/导航导致的请求中止 → 忽略（页面即将销毁，不应改变 localStorage）
+      // 页面刷新/导航导致的请求中止 → 忽略
       if (axios.isCancel(err) || (err instanceof DOMException && err.name === "AbortError")) {
         return;
       }
@@ -28,11 +35,12 @@ export function AuthGuard() {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         return;
       }
-      // 其他错误（网络/500/429）→ 显示重试，不 logout（session 可能仍有效）
+      // 其他错误（网络/500/429）→ 显示重试，不 logout
       const msg = axios.isAxiosError(err)
         ? (err.response?.data as { msg?: string })?.msg ?? err.message
         : "网络异常，请检查连接";
       setLoadError(msg);
+      dismissGlobalLoading();
     });
   }, [fetchUser, fetchMenus]);
 
@@ -42,8 +50,16 @@ export function AuthGuard() {
     }
   }, [token, user, loadAuth]);
 
+  // 认证完成（成功或无权限），移除全局加载页
+  useEffect(() => {
+    if (user && menusFetched) {
+      dismissGlobalLoading();
+    }
+  }, [user, menusFetched]);
+
   // 未登录
   if (!token) {
+    dismissGlobalLoading();
     return <Navigate to="/login" replace />;
   }
 
@@ -64,16 +80,12 @@ export function AuthGuard() {
     );
   }
 
-  // 用户信息或菜单还没加载完
+  // 用户信息或菜单还没加载完 → 不渲染任何东西，让 index.html 的品牌加载页继续显示
   if (!user || !menusFetched) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <NxLoading tip="正在加载..." />
-      </div>
-    );
+    return null;
   }
 
-  // 菜单已加载但为空——用户没有任何菜单权限
+  // 菜单已加载但为空
   if (menus.length === 0) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
