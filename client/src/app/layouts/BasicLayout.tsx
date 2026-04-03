@@ -1,7 +1,27 @@
 import { useState, useMemo } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Layout, Menu, Dropdown, Button, Popover, Breadcrumb, Tooltip, Watermark, type MenuProps } from "antd";
-import * as Icons from "@ant-design/icons";
+import {
+  AppstoreOutlined,
+  BulbOutlined,
+  FileTextOutlined,
+  LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  UserOutlined,
+  TeamOutlined,
+  SettingOutlined,
+  ApartmentOutlined,
+  BookOutlined,
+  EditOutlined,
+  FileSearchOutlined,
+  FileOutlined,
+  ClockCircleOutlined,
+  ScheduleOutlined,
+  SafetyCertificateOutlined,
+  DashboardOutlined,
+  DatabaseOutlined,
+} from "@ant-design/icons";
 import { useAuth, type MenuVO } from "@/shared/hooks/useAuth";
 import { useTheme } from "@/shared/hooks/useTheme";
 import { usePreferences } from "@/shared/stores/preferences";
@@ -9,14 +29,36 @@ import styles from "./BasicLayout.module.css";
 
 const { Header, Sider, Content } = Layout;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const iconRegistry = Icons as unknown as Record<string, React.ComponentType<any>>;
+/** 显式图标注册表——只包含实际使用的图标，支持 tree-shaking */
+const iconRegistry: Record<string, React.ComponentType> = {
+  // 导航/布局图标
+  AppstoreOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
+  // 用户操作图标
+  UserOutlined, LogoutOutlined, BulbOutlined,
+  // 菜单图标（与 sys_menu.icon 字段对应）
+  SettingOutlined, TeamOutlined, ApartmentOutlined, BookOutlined,
+  EditOutlined, FileSearchOutlined, FileOutlined, FileTextOutlined,
+  ClockCircleOutlined, ScheduleOutlined, SafetyCertificateOutlined,
+  DashboardOutlined, DatabaseOutlined,
+  // 别名映射（sys_menu 中的短名 → 实际组件）
+  Setting: SettingOutlined,
+  User: UserOutlined,
+  Peoples: TeamOutlined,
+  TreeTable: ApartmentOutlined,
+  Dict: BookOutlined,
+  Edit: EditOutlined,
+  Log: FileSearchOutlined,
+  Document: FileOutlined,
+  Job: ClockCircleOutlined,
+  Solution: BulbOutlined,
+};
 
 /** 根据图标名称动态获取 Ant Design 图标组件 */
 function getIcon(name: string | null | undefined): React.ReactNode {
-  if (!name) return <Icons.FileTextOutlined />;
-  const IconComp = iconRegistry[name];
-  return IconComp ? <IconComp /> : <Icons.FileTextOutlined />;
+  if (!name) return <FileTextOutlined />;
+  // 精确匹配 → 追加 Outlined 后缀匹配 → 兜底
+  const IconComp = iconRegistry[name] ?? iconRegistry[name + "Outlined"];
+  return IconComp ? <IconComp /> : <FileTextOutlined />;
 }
 
 /* ──────────── 子系统 → 模块 → 菜单 三级配置 ──────────── */
@@ -155,9 +197,9 @@ export function BasicLayout() {
 
   // 用户下拉菜单
   const userMenuItems: MenuProps["items"] = [
-    { key: "theme", icon: <Icons.BulbOutlined />, label: isDark ? "浅色模式" : "深色模式", onClick: toggleTheme },
+    { key: "theme", icon: <BulbOutlined />, label: isDark ? "浅色模式" : "深色模式", onClick: toggleTheme },
     { type: "divider" },
-    { key: "logout", icon: <Icons.LogoutOutlined />, label: "退出登录", onClick: logout },
+    { key: "logout", icon: <LogoutOutlined />, label: "退出登录", onClick: logout },
   ];
 
   const headerStyle = {
@@ -185,7 +227,7 @@ export function BasicLayout() {
   // 公共 Header 右侧
   const headerRight = (
     <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-      <Button type="text" icon={<Icons.UserOutlined />} className={styles.userBtn}>
+      <Button type="text" icon={<UserOutlined />} className={styles.userBtn}>
         {user?.username ?? "用户"}
       </Button>
     </Dropdown>
@@ -194,7 +236,7 @@ export function BasicLayout() {
   // 公共九宫格按钮
   const gridButton = (
     <Popover content={subsystemGrid} trigger="click" open={popoverOpen} onOpenChange={setPopoverOpen} placement="bottomLeft" arrow={false}>
-      <div className={styles.gridBtn}><Icons.AppstoreOutlined /></div>
+      <div className={styles.gridBtn}><AppstoreOutlined /></div>
     </Popover>
   );
 
@@ -215,7 +257,7 @@ export function BasicLayout() {
   const collapseButton = (
     <div className={styles.siderFooter}>
       <Tooltip title={prefs.sidebarCollapsed ? "展开菜单" : "收起菜单"} placement="right">
-        <Button type="text" icon={prefs.sidebarCollapsed ? <Icons.MenuUnfoldOutlined /> : <Icons.MenuFoldOutlined />} onClick={toggleCollapsed} className={styles.collapseBtn} />
+        <Button type="text" icon={prefs.sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={toggleCollapsed} className={styles.collapseBtn} />
       </Tooltip>
     </div>
   );
