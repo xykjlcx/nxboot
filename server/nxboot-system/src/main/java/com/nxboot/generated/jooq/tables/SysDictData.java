@@ -4,15 +4,19 @@
 package com.nxboot.generated.jooq.tables;
 
 
+import com.nxboot.generated.jooq.Indexes;
 import com.nxboot.generated.jooq.Keys;
 import com.nxboot.generated.jooq.Public;
 import com.nxboot.generated.jooq.tables.records.SysDictDataRecord;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
@@ -142,6 +146,11 @@ public class SysDictData extends TableImpl<SysDictDataRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_DICT_DATA_TYPE);
     }
 
     @Override

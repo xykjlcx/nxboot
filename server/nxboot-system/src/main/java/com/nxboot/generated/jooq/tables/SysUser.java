@@ -4,6 +4,7 @@
 package com.nxboot.generated.jooq.tables;
 
 
+import com.nxboot.generated.jooq.Indexes;
 import com.nxboot.generated.jooq.Keys;
 import com.nxboot.generated.jooq.Public;
 import com.nxboot.generated.jooq.tables.records.SysUserRecord;
@@ -15,6 +16,7 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
@@ -122,6 +124,16 @@ public class SysUser extends TableImpl<SysUserRecord> {
      */
     public final TableField<SysUserRecord, Integer> DELETED = createField(DSL.name("deleted"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "逻辑删除：0=未删除，1=已删除");
 
+    /**
+     * The column <code>public.sys_user.dept_id</code>. 所属部门ID
+     */
+    public final TableField<SysUserRecord, Long> DEPT_ID = createField(DSL.name("dept_id"), SQLDataType.BIGINT, this, "所属部门ID");
+
+    /**
+     * The column <code>public.sys_user.version</code>.
+     */
+    public final TableField<SysUserRecord, Integer> VERSION = createField(DSL.name("version"), SQLDataType.INTEGER.defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "");
+
     private SysUser(Name alias, Table<SysUserRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -154,6 +166,11 @@ public class SysUser extends TableImpl<SysUserRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.UK_USER_USERNAME);
     }
 
     @Override

@@ -4,6 +4,7 @@
 package com.nxboot.generated.jooq.tables;
 
 
+import com.nxboot.generated.jooq.Indexes;
 import com.nxboot.generated.jooq.Keys;
 import com.nxboot.generated.jooq.Public;
 import com.nxboot.generated.jooq.tables.records.SysConfigRecord;
@@ -15,6 +16,7 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
@@ -102,6 +104,11 @@ public class SysConfig extends TableImpl<SysConfigRecord> {
      */
     public final TableField<SysConfigRecord, Integer> DELETED = createField(DSL.name("deleted"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "");
 
+    /**
+     * The column <code>public.sys_config.version</code>.
+     */
+    public final TableField<SysConfigRecord, Integer> VERSION = createField(DSL.name("version"), SQLDataType.INTEGER.defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "");
+
     private SysConfig(Name alias, Table<SysConfigRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -134,6 +141,11 @@ public class SysConfig extends TableImpl<SysConfigRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.UK_CONFIG_KEY);
     }
 
     @Override

@@ -170,6 +170,21 @@ public class SysConfigRecord extends UpdatableRecordImpl<SysConfigRecord> {
         return (Integer) get(9);
     }
 
+    /**
+     * Setter for <code>public.sys_config.version</code>.
+     */
+    public SysConfigRecord setVersion(Integer value) {
+        set(10, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sys_config.version</code>.
+     */
+    public Integer getVersion() {
+        return (Integer) get(10);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -193,7 +208,7 @@ public class SysConfigRecord extends UpdatableRecordImpl<SysConfigRecord> {
     /**
      * Create a detached, initialised SysConfigRecord
      */
-    public SysConfigRecord(Long id, String configKey, String configValue, String configName, String remark, String createBy, LocalDateTime createTime, String updateBy, LocalDateTime updateTime, Integer deleted) {
+    public SysConfigRecord(Long id, String configKey, String configValue, String configName, String remark, String createBy, LocalDateTime createTime, String updateBy, LocalDateTime updateTime, Integer deleted, Integer version) {
         super(SysConfig.SYS_CONFIG);
 
         setId(id);
@@ -206,6 +221,7 @@ public class SysConfigRecord extends UpdatableRecordImpl<SysConfigRecord> {
         setUpdateBy(updateBy);
         setUpdateTime(updateTime);
         setDeleted(deleted);
+        setVersion(version);
         resetChangedOnNotNull();
     }
 }

@@ -185,6 +185,38 @@ public class SysRoleRecord extends UpdatableRecordImpl<SysRoleRecord> {
         return (Integer) get(10);
     }
 
+    /**
+     * Setter for <code>public.sys_role.version</code>.
+     */
+    public SysRoleRecord setVersion(Integer value) {
+        set(11, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sys_role.version</code>.
+     */
+    public Integer getVersion() {
+        return (Integer) get(11);
+    }
+
+    /**
+     * Setter for <code>public.sys_role.data_scope</code>. 数据权限范围(1全部 2自定义 3本部门
+     * 4本部门及下级 5仅本人)
+     */
+    public SysRoleRecord setDataScope(Integer value) {
+        set(12, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sys_role.data_scope</code>. 数据权限范围(1全部 2自定义 3本部门
+     * 4本部门及下级 5仅本人)
+     */
+    public Integer getDataScope() {
+        return (Integer) get(12);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -208,7 +240,7 @@ public class SysRoleRecord extends UpdatableRecordImpl<SysRoleRecord> {
     /**
      * Create a detached, initialised SysRoleRecord
      */
-    public SysRoleRecord(Long id, String roleKey, String roleName, Integer sortOrder, Integer enabled, String remark, String createBy, LocalDateTime createTime, String updateBy, LocalDateTime updateTime, Integer deleted) {
+    public SysRoleRecord(Long id, String roleKey, String roleName, Integer sortOrder, Integer enabled, String remark, String createBy, LocalDateTime createTime, String updateBy, LocalDateTime updateTime, Integer deleted, Integer version, Integer dataScope) {
         super(SysRole.SYS_ROLE);
 
         setId(id);
@@ -222,6 +254,8 @@ public class SysRoleRecord extends UpdatableRecordImpl<SysRoleRecord> {
         setUpdateBy(updateBy);
         setUpdateTime(updateTime);
         setDeleted(deleted);
+        setVersion(version);
+        setDataScope(dataScope);
         resetChangedOnNotNull();
     }
 }

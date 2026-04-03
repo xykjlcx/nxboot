@@ -4,15 +4,19 @@
 package com.nxboot.generated.jooq.tables;
 
 
+import com.nxboot.generated.jooq.Indexes;
 import com.nxboot.generated.jooq.Keys;
 import com.nxboot.generated.jooq.Public;
 import com.nxboot.generated.jooq.tables.records.SysJobLogRecord;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
@@ -30,7 +34,7 @@ import org.jooq.impl.TableImpl;
 
 
 /**
- * 定时任务日志表
+ * 定时任务执行日志
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class SysJobLog extends TableImpl<SysJobLogRecord> {
@@ -63,22 +67,22 @@ public class SysJobLog extends TableImpl<SysJobLogRecord> {
     /**
      * The column <code>public.sys_job_log.job_name</code>.
      */
-    public final TableField<SysJobLogRecord, String> JOB_NAME = createField(DSL.name("job_name"), SQLDataType.VARCHAR(128), this, "");
+    public final TableField<SysJobLogRecord, String> JOB_NAME = createField(DSL.name("job_name"), SQLDataType.VARCHAR(128).nullable(false), this, "");
+
+    /**
+     * The column <code>public.sys_job_log.job_group</code>.
+     */
+    public final TableField<SysJobLogRecord, String> JOB_GROUP = createField(DSL.name("job_group"), SQLDataType.VARCHAR(64), this, "");
 
     /**
      * The column <code>public.sys_job_log.invoke_target</code>.
      */
-    public final TableField<SysJobLogRecord, String> INVOKE_TARGET = createField(DSL.name("invoke_target"), SQLDataType.VARCHAR(512), this, "");
+    public final TableField<SysJobLogRecord, String> INVOKE_TARGET = createField(DSL.name("invoke_target"), SQLDataType.VARCHAR(500), this, "");
 
     /**
-     * The column <code>public.sys_job_log.message</code>.
+     * The column <code>public.sys_job_log.status</code>.
      */
-    public final TableField<SysJobLogRecord, String> MESSAGE = createField(DSL.name("message"), SQLDataType.CLOB, this, "");
-
-    /**
-     * The column <code>public.sys_job_log.status</code>. 状态：1=成功，0=失败
-     */
-    public final TableField<SysJobLogRecord, Integer> STATUS = createField(DSL.name("status"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "状态：1=成功，0=失败");
+    public final TableField<SysJobLogRecord, Integer> STATUS = createField(DSL.name("status"), SQLDataType.INTEGER.defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>public.sys_job_log.error_msg</code>.
@@ -86,21 +90,26 @@ public class SysJobLog extends TableImpl<SysJobLogRecord> {
     public final TableField<SysJobLogRecord, String> ERROR_MSG = createField(DSL.name("error_msg"), SQLDataType.CLOB, this, "");
 
     /**
-     * The column <code>public.sys_job_log.duration</code>. 耗时（毫秒）
+     * The column <code>public.sys_job_log.start_time</code>.
      */
-    public final TableField<SysJobLogRecord, Long> DURATION = createField(DSL.name("duration"), SQLDataType.BIGINT, this, "耗时（毫秒）");
+    public final TableField<SysJobLogRecord, LocalDateTime> START_TIME = createField(DSL.name("start_time"), SQLDataType.LOCALDATETIME(6), this, "");
 
     /**
-     * The column <code>public.sys_job_log.create_time</code>.
+     * The column <code>public.sys_job_log.end_time</code>.
      */
-    public final TableField<SysJobLogRecord, LocalDateTime> CREATE_TIME = createField(DSL.name("create_time"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "");
+    public final TableField<SysJobLogRecord, LocalDateTime> END_TIME = createField(DSL.name("end_time"), SQLDataType.LOCALDATETIME(6), this, "");
+
+    /**
+     * The column <code>public.sys_job_log.duration</code>.
+     */
+    public final TableField<SysJobLogRecord, Long> DURATION = createField(DSL.name("duration"), SQLDataType.BIGINT.defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BIGINT)), this, "");
 
     private SysJobLog(Name alias, Table<SysJobLogRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
 
     private SysJobLog(Name alias, Table<SysJobLogRecord> aliased, Field<?>[] parameters, Condition where) {
-        super(alias, null, aliased, parameters, DSL.comment("定时任务日志表"), TableOptions.table(), where);
+        super(alias, null, aliased, parameters, DSL.comment("定时任务执行日志"), TableOptions.table(), where);
     }
 
     /**
@@ -127,6 +136,11 @@ public class SysJobLog extends TableImpl<SysJobLogRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_JOB_LOG_JOB_ID, Indexes.IDX_JOB_LOG_TIME);
     }
 
     @Override

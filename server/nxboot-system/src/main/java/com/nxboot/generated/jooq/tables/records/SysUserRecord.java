@@ -230,6 +230,36 @@ public class SysUserRecord extends UpdatableRecordImpl<SysUserRecord> {
         return (Integer) get(13);
     }
 
+    /**
+     * Setter for <code>public.sys_user.dept_id</code>. 所属部门ID
+     */
+    public SysUserRecord setDeptId(Long value) {
+        set(14, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sys_user.dept_id</code>. 所属部门ID
+     */
+    public Long getDeptId() {
+        return (Long) get(14);
+    }
+
+    /**
+     * Setter for <code>public.sys_user.version</code>.
+     */
+    public SysUserRecord setVersion(Integer value) {
+        set(15, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sys_user.version</code>.
+     */
+    public Integer getVersion() {
+        return (Integer) get(15);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -253,7 +283,7 @@ public class SysUserRecord extends UpdatableRecordImpl<SysUserRecord> {
     /**
      * Create a detached, initialised SysUserRecord
      */
-    public SysUserRecord(Long id, String username, String password, String nickname, String email, String phone, String avatar, Integer enabled, String remark, String createBy, LocalDateTime createTime, String updateBy, LocalDateTime updateTime, Integer deleted) {
+    public SysUserRecord(Long id, String username, String password, String nickname, String email, String phone, String avatar, Integer enabled, String remark, String createBy, LocalDateTime createTime, String updateBy, LocalDateTime updateTime, Integer deleted, Long deptId, Integer version) {
         super(SysUser.SYS_USER);
 
         setId(id);
@@ -270,6 +300,8 @@ public class SysUserRecord extends UpdatableRecordImpl<SysUserRecord> {
         setUpdateBy(updateBy);
         setUpdateTime(updateTime);
         setDeleted(deleted);
+        setDeptId(deptId);
+        setVersion(version);
         resetChangedOnNotNull();
     }
 }

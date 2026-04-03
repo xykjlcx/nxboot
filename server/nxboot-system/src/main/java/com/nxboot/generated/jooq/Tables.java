@@ -5,17 +5,21 @@ package com.nxboot.generated.jooq;
 
 
 import com.nxboot.generated.jooq.tables.SysConfig;
+import com.nxboot.generated.jooq.tables.SysDept;
 import com.nxboot.generated.jooq.tables.SysDictData;
 import com.nxboot.generated.jooq.tables.SysDictType;
 import com.nxboot.generated.jooq.tables.SysFile;
 import com.nxboot.generated.jooq.tables.SysJob;
 import com.nxboot.generated.jooq.tables.SysJobLog;
 import com.nxboot.generated.jooq.tables.SysLog;
+import com.nxboot.generated.jooq.tables.SysLoginLog;
 import com.nxboot.generated.jooq.tables.SysMenu;
 import com.nxboot.generated.jooq.tables.SysRole;
+import com.nxboot.generated.jooq.tables.SysRoleDept;
 import com.nxboot.generated.jooq.tables.SysRoleMenu;
 import com.nxboot.generated.jooq.tables.SysUser;
 import com.nxboot.generated.jooq.tables.SysUserRole;
+import com.nxboot.generated.jooq.tables.SysUserSocial;
 
 
 /**
@@ -28,6 +32,11 @@ public class Tables {
      * 系统配置表
      */
     public static final SysConfig SYS_CONFIG = SysConfig.SYS_CONFIG;
+
+    /**
+     * 部门
+     */
+    public static final SysDept SYS_DEPT = SysDept.SYS_DEPT;
 
     /**
      * 字典数据表
@@ -50,7 +59,7 @@ public class Tables {
     public static final SysJob SYS_JOB = SysJob.SYS_JOB;
 
     /**
-     * 定时任务日志表
+     * 定时任务执行日志
      */
     public static final SysJobLog SYS_JOB_LOG = SysJobLog.SYS_JOB_LOG;
 
@@ -58,6 +67,11 @@ public class Tables {
      * 操作日志表
      */
     public static final SysLog SYS_LOG = SysLog.SYS_LOG;
+
+    /**
+     * 登录日志
+     */
+    public static final SysLoginLog SYS_LOGIN_LOG = SysLoginLog.SYS_LOGIN_LOG;
 
     /**
      * 菜单表
@@ -68,6 +82,11 @@ public class Tables {
      * 角色表
      */
     public static final SysRole SYS_ROLE = SysRole.SYS_ROLE;
+
+    /**
+     * 角色-部门关联（自定义数据权限）
+     */
+    public static final SysRoleDept SYS_ROLE_DEPT = SysRoleDept.SYS_ROLE_DEPT;
 
     /**
      * 角色菜单关联表
@@ -83,4 +102,9 @@ public class Tables {
      * 用户角色关联表
      */
     public static final SysUserRole SYS_USER_ROLE = SysUserRole.SYS_USER_ROLE;
+
+    /**
+     * 用户社会化登录绑定
+     */
+    public static final SysUserSocial SYS_USER_SOCIAL = SysUserSocial.SYS_USER_SOCIAL;
 }

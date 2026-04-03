@@ -4,6 +4,7 @@
 package com.nxboot.generated.jooq.tables;
 
 
+import com.nxboot.generated.jooq.Indexes;
 import com.nxboot.generated.jooq.Keys;
 import com.nxboot.generated.jooq.Public;
 import com.nxboot.generated.jooq.tables.records.SysRoleRecord;
@@ -15,6 +16,7 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
@@ -107,6 +109,17 @@ public class SysRole extends TableImpl<SysRoleRecord> {
      */
     public final TableField<SysRoleRecord, Integer> DELETED = createField(DSL.name("deleted"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "逻辑删除：0=未删除，1=已删除");
 
+    /**
+     * The column <code>public.sys_role.version</code>.
+     */
+    public final TableField<SysRoleRecord, Integer> VERSION = createField(DSL.name("version"), SQLDataType.INTEGER.defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "");
+
+    /**
+     * The column <code>public.sys_role.data_scope</code>. 数据权限范围(1全部 2自定义 3本部门
+     * 4本部门及下级 5仅本人)
+     */
+    public final TableField<SysRoleRecord, Integer> DATA_SCOPE = createField(DSL.name("data_scope"), SQLDataType.INTEGER.defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "数据权限范围(1全部 2自定义 3本部门 4本部门及下级 5仅本人)");
+
     private SysRole(Name alias, Table<SysRoleRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -139,6 +152,11 @@ public class SysRole extends TableImpl<SysRoleRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.UK_ROLE_KEY);
     }
 
     @Override

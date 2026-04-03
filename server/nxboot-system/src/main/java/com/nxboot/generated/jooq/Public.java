@@ -5,17 +5,21 @@ package com.nxboot.generated.jooq;
 
 
 import com.nxboot.generated.jooq.tables.SysConfig;
+import com.nxboot.generated.jooq.tables.SysDept;
 import com.nxboot.generated.jooq.tables.SysDictData;
 import com.nxboot.generated.jooq.tables.SysDictType;
 import com.nxboot.generated.jooq.tables.SysFile;
 import com.nxboot.generated.jooq.tables.SysJob;
 import com.nxboot.generated.jooq.tables.SysJobLog;
 import com.nxboot.generated.jooq.tables.SysLog;
+import com.nxboot.generated.jooq.tables.SysLoginLog;
 import com.nxboot.generated.jooq.tables.SysMenu;
 import com.nxboot.generated.jooq.tables.SysRole;
+import com.nxboot.generated.jooq.tables.SysRoleDept;
 import com.nxboot.generated.jooq.tables.SysRoleMenu;
 import com.nxboot.generated.jooq.tables.SysUser;
 import com.nxboot.generated.jooq.tables.SysUserRole;
+import com.nxboot.generated.jooq.tables.SysUserSocial;
 
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +48,11 @@ public class Public extends SchemaImpl {
     public final SysConfig SYS_CONFIG = SysConfig.SYS_CONFIG;
 
     /**
+     * 部门
+     */
+    public final SysDept SYS_DEPT = SysDept.SYS_DEPT;
+
+    /**
      * 字典数据表
      */
     public final SysDictData SYS_DICT_DATA = SysDictData.SYS_DICT_DATA;
@@ -64,7 +73,7 @@ public class Public extends SchemaImpl {
     public final SysJob SYS_JOB = SysJob.SYS_JOB;
 
     /**
-     * 定时任务日志表
+     * 定时任务执行日志
      */
     public final SysJobLog SYS_JOB_LOG = SysJobLog.SYS_JOB_LOG;
 
@@ -72,6 +81,11 @@ public class Public extends SchemaImpl {
      * 操作日志表
      */
     public final SysLog SYS_LOG = SysLog.SYS_LOG;
+
+    /**
+     * 登录日志
+     */
+    public final SysLoginLog SYS_LOGIN_LOG = SysLoginLog.SYS_LOGIN_LOG;
 
     /**
      * 菜单表
@@ -82,6 +96,11 @@ public class Public extends SchemaImpl {
      * 角色表
      */
     public final SysRole SYS_ROLE = SysRole.SYS_ROLE;
+
+    /**
+     * 角色-部门关联（自定义数据权限）
+     */
+    public final SysRoleDept SYS_ROLE_DEPT = SysRoleDept.SYS_ROLE_DEPT;
 
     /**
      * 角色菜单关联表
@@ -97,6 +116,11 @@ public class Public extends SchemaImpl {
      * 用户角色关联表
      */
     public final SysUserRole SYS_USER_ROLE = SysUserRole.SYS_USER_ROLE;
+
+    /**
+     * 用户社会化登录绑定
+     */
+    public final SysUserSocial SYS_USER_SOCIAL = SysUserSocial.SYS_USER_SOCIAL;
 
     /**
      * No further instances allowed
@@ -115,17 +139,21 @@ public class Public extends SchemaImpl {
     public final List<Table<?>> getTables() {
         return Arrays.asList(
             SysConfig.SYS_CONFIG,
+            SysDept.SYS_DEPT,
             SysDictData.SYS_DICT_DATA,
             SysDictType.SYS_DICT_TYPE,
             SysFile.SYS_FILE,
             SysJob.SYS_JOB,
             SysJobLog.SYS_JOB_LOG,
             SysLog.SYS_LOG,
+            SysLoginLog.SYS_LOGIN_LOG,
             SysMenu.SYS_MENU,
             SysRole.SYS_ROLE,
+            SysRoleDept.SYS_ROLE_DEPT,
             SysRoleMenu.SYS_ROLE_MENU,
             SysUser.SYS_USER,
-            SysUserRole.SYS_USER_ROLE
+            SysUserRole.SYS_USER_ROLE,
+            SysUserSocial.SYS_USER_SOCIAL
         );
     }
 }

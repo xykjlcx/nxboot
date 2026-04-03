@@ -13,7 +13,7 @@ import org.jooq.impl.UpdatableRecordImpl;
 
 
 /**
- * 定时任务日志表
+ * 定时任务执行日志
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class SysJobLogRecord extends UpdatableRecordImpl<SysJobLogRecord> {
@@ -66,10 +66,25 @@ public class SysJobLogRecord extends UpdatableRecordImpl<SysJobLogRecord> {
     }
 
     /**
+     * Setter for <code>public.sys_job_log.job_group</code>.
+     */
+    public SysJobLogRecord setJobGroup(String value) {
+        set(3, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sys_job_log.job_group</code>.
+     */
+    public String getJobGroup() {
+        return (String) get(3);
+    }
+
+    /**
      * Setter for <code>public.sys_job_log.invoke_target</code>.
      */
     public SysJobLogRecord setInvokeTarget(String value) {
-        set(3, value);
+        set(4, value);
         return this;
     }
 
@@ -77,26 +92,11 @@ public class SysJobLogRecord extends UpdatableRecordImpl<SysJobLogRecord> {
      * Getter for <code>public.sys_job_log.invoke_target</code>.
      */
     public String getInvokeTarget() {
-        return (String) get(3);
-    }
-
-    /**
-     * Setter for <code>public.sys_job_log.message</code>.
-     */
-    public SysJobLogRecord setMessage(String value) {
-        set(4, value);
-        return this;
-    }
-
-    /**
-     * Getter for <code>public.sys_job_log.message</code>.
-     */
-    public String getMessage() {
         return (String) get(4);
     }
 
     /**
-     * Setter for <code>public.sys_job_log.status</code>. 状态：1=成功，0=失败
+     * Setter for <code>public.sys_job_log.status</code>.
      */
     public SysJobLogRecord setStatus(Integer value) {
         set(5, value);
@@ -104,7 +104,7 @@ public class SysJobLogRecord extends UpdatableRecordImpl<SysJobLogRecord> {
     }
 
     /**
-     * Getter for <code>public.sys_job_log.status</code>. 状态：1=成功，0=失败
+     * Getter for <code>public.sys_job_log.status</code>.
      */
     public Integer getStatus() {
         return (Integer) get(5);
@@ -126,33 +126,48 @@ public class SysJobLogRecord extends UpdatableRecordImpl<SysJobLogRecord> {
     }
 
     /**
-     * Setter for <code>public.sys_job_log.duration</code>. 耗时（毫秒）
+     * Setter for <code>public.sys_job_log.start_time</code>.
      */
-    public SysJobLogRecord setDuration(Long value) {
+    public SysJobLogRecord setStartTime(LocalDateTime value) {
         set(7, value);
         return this;
     }
 
     /**
-     * Getter for <code>public.sys_job_log.duration</code>. 耗时（毫秒）
+     * Getter for <code>public.sys_job_log.start_time</code>.
      */
-    public Long getDuration() {
-        return (Long) get(7);
+    public LocalDateTime getStartTime() {
+        return (LocalDateTime) get(7);
     }
 
     /**
-     * Setter for <code>public.sys_job_log.create_time</code>.
+     * Setter for <code>public.sys_job_log.end_time</code>.
      */
-    public SysJobLogRecord setCreateTime(LocalDateTime value) {
+    public SysJobLogRecord setEndTime(LocalDateTime value) {
         set(8, value);
         return this;
     }
 
     /**
-     * Getter for <code>public.sys_job_log.create_time</code>.
+     * Getter for <code>public.sys_job_log.end_time</code>.
      */
-    public LocalDateTime getCreateTime() {
+    public LocalDateTime getEndTime() {
         return (LocalDateTime) get(8);
+    }
+
+    /**
+     * Setter for <code>public.sys_job_log.duration</code>.
+     */
+    public SysJobLogRecord setDuration(Long value) {
+        set(9, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sys_job_log.duration</code>.
+     */
+    public Long getDuration() {
+        return (Long) get(9);
     }
 
     // -------------------------------------------------------------------------
@@ -178,18 +193,19 @@ public class SysJobLogRecord extends UpdatableRecordImpl<SysJobLogRecord> {
     /**
      * Create a detached, initialised SysJobLogRecord
      */
-    public SysJobLogRecord(Long id, Long jobId, String jobName, String invokeTarget, String message, Integer status, String errorMsg, Long duration, LocalDateTime createTime) {
+    public SysJobLogRecord(Long id, Long jobId, String jobName, String jobGroup, String invokeTarget, Integer status, String errorMsg, LocalDateTime startTime, LocalDateTime endTime, Long duration) {
         super(SysJobLog.SYS_JOB_LOG);
 
         setId(id);
         setJobId(jobId);
         setJobName(jobName);
+        setJobGroup(jobGroup);
         setInvokeTarget(invokeTarget);
-        setMessage(message);
         setStatus(status);
         setErrorMsg(errorMsg);
+        setStartTime(startTime);
+        setEndTime(endTime);
         setDuration(duration);
-        setCreateTime(createTime);
         resetChangedOnNotNull();
     }
 }

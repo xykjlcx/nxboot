@@ -5,29 +5,37 @@ package com.nxboot.generated.jooq;
 
 
 import com.nxboot.generated.jooq.tables.SysConfig;
+import com.nxboot.generated.jooq.tables.SysDept;
 import com.nxboot.generated.jooq.tables.SysDictData;
 import com.nxboot.generated.jooq.tables.SysDictType;
 import com.nxboot.generated.jooq.tables.SysFile;
 import com.nxboot.generated.jooq.tables.SysJob;
 import com.nxboot.generated.jooq.tables.SysJobLog;
 import com.nxboot.generated.jooq.tables.SysLog;
+import com.nxboot.generated.jooq.tables.SysLoginLog;
 import com.nxboot.generated.jooq.tables.SysMenu;
 import com.nxboot.generated.jooq.tables.SysRole;
+import com.nxboot.generated.jooq.tables.SysRoleDept;
 import com.nxboot.generated.jooq.tables.SysRoleMenu;
 import com.nxboot.generated.jooq.tables.SysUser;
 import com.nxboot.generated.jooq.tables.SysUserRole;
+import com.nxboot.generated.jooq.tables.SysUserSocial;
 import com.nxboot.generated.jooq.tables.records.SysConfigRecord;
+import com.nxboot.generated.jooq.tables.records.SysDeptRecord;
 import com.nxboot.generated.jooq.tables.records.SysDictDataRecord;
 import com.nxboot.generated.jooq.tables.records.SysDictTypeRecord;
 import com.nxboot.generated.jooq.tables.records.SysFileRecord;
 import com.nxboot.generated.jooq.tables.records.SysJobLogRecord;
 import com.nxboot.generated.jooq.tables.records.SysJobRecord;
 import com.nxboot.generated.jooq.tables.records.SysLogRecord;
+import com.nxboot.generated.jooq.tables.records.SysLoginLogRecord;
 import com.nxboot.generated.jooq.tables.records.SysMenuRecord;
+import com.nxboot.generated.jooq.tables.records.SysRoleDeptRecord;
 import com.nxboot.generated.jooq.tables.records.SysRoleMenuRecord;
 import com.nxboot.generated.jooq.tables.records.SysRoleRecord;
 import com.nxboot.generated.jooq.tables.records.SysUserRecord;
 import com.nxboot.generated.jooq.tables.records.SysUserRoleRecord;
+import com.nxboot.generated.jooq.tables.records.SysUserSocialRecord;
 
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
@@ -48,6 +56,7 @@ public class Keys {
 
     public static final UniqueKey<SysConfigRecord> SYS_CONFIG_CONFIG_KEY_KEY = Internal.createUniqueKey(SysConfig.SYS_CONFIG, DSL.name("sys_config_config_key_key"), new TableField[] { SysConfig.SYS_CONFIG.CONFIG_KEY }, true);
     public static final UniqueKey<SysConfigRecord> SYS_CONFIG_PKEY = Internal.createUniqueKey(SysConfig.SYS_CONFIG, DSL.name("sys_config_pkey"), new TableField[] { SysConfig.SYS_CONFIG.ID }, true);
+    public static final UniqueKey<SysDeptRecord> SYS_DEPT_PKEY = Internal.createUniqueKey(SysDept.SYS_DEPT, DSL.name("sys_dept_pkey"), new TableField[] { SysDept.SYS_DEPT.ID }, true);
     public static final UniqueKey<SysDictDataRecord> SYS_DICT_DATA_PKEY = Internal.createUniqueKey(SysDictData.SYS_DICT_DATA, DSL.name("sys_dict_data_pkey"), new TableField[] { SysDictData.SYS_DICT_DATA.ID }, true);
     public static final UniqueKey<SysDictTypeRecord> SYS_DICT_TYPE_DICT_TYPE_KEY = Internal.createUniqueKey(SysDictType.SYS_DICT_TYPE, DSL.name("sys_dict_type_dict_type_key"), new TableField[] { SysDictType.SYS_DICT_TYPE.DICT_TYPE }, true);
     public static final UniqueKey<SysDictTypeRecord> SYS_DICT_TYPE_PKEY = Internal.createUniqueKey(SysDictType.SYS_DICT_TYPE, DSL.name("sys_dict_type_pkey"), new TableField[] { SysDictType.SYS_DICT_TYPE.ID }, true);
@@ -55,11 +64,15 @@ public class Keys {
     public static final UniqueKey<SysJobRecord> SYS_JOB_PKEY = Internal.createUniqueKey(SysJob.SYS_JOB, DSL.name("sys_job_pkey"), new TableField[] { SysJob.SYS_JOB.ID }, true);
     public static final UniqueKey<SysJobLogRecord> SYS_JOB_LOG_PKEY = Internal.createUniqueKey(SysJobLog.SYS_JOB_LOG, DSL.name("sys_job_log_pkey"), new TableField[] { SysJobLog.SYS_JOB_LOG.ID }, true);
     public static final UniqueKey<SysLogRecord> SYS_LOG_PKEY = Internal.createUniqueKey(SysLog.SYS_LOG, DSL.name("sys_log_pkey"), new TableField[] { SysLog.SYS_LOG.ID }, true);
+    public static final UniqueKey<SysLoginLogRecord> SYS_LOGIN_LOG_PKEY = Internal.createUniqueKey(SysLoginLog.SYS_LOGIN_LOG, DSL.name("sys_login_log_pkey"), new TableField[] { SysLoginLog.SYS_LOGIN_LOG.ID }, true);
     public static final UniqueKey<SysMenuRecord> SYS_MENU_PKEY = Internal.createUniqueKey(SysMenu.SYS_MENU, DSL.name("sys_menu_pkey"), new TableField[] { SysMenu.SYS_MENU.ID }, true);
     public static final UniqueKey<SysRoleRecord> SYS_ROLE_PKEY = Internal.createUniqueKey(SysRole.SYS_ROLE, DSL.name("sys_role_pkey"), new TableField[] { SysRole.SYS_ROLE.ID }, true);
     public static final UniqueKey<SysRoleRecord> SYS_ROLE_ROLE_KEY_KEY = Internal.createUniqueKey(SysRole.SYS_ROLE, DSL.name("sys_role_role_key_key"), new TableField[] { SysRole.SYS_ROLE.ROLE_KEY }, true);
+    public static final UniqueKey<SysRoleDeptRecord> SYS_ROLE_DEPT_PKEY = Internal.createUniqueKey(SysRoleDept.SYS_ROLE_DEPT, DSL.name("sys_role_dept_pkey"), new TableField[] { SysRoleDept.SYS_ROLE_DEPT.ROLE_ID, SysRoleDept.SYS_ROLE_DEPT.DEPT_ID }, true);
     public static final UniqueKey<SysRoleMenuRecord> SYS_ROLE_MENU_PKEY = Internal.createUniqueKey(SysRoleMenu.SYS_ROLE_MENU, DSL.name("sys_role_menu_pkey"), new TableField[] { SysRoleMenu.SYS_ROLE_MENU.ROLE_ID, SysRoleMenu.SYS_ROLE_MENU.MENU_ID }, true);
     public static final UniqueKey<SysUserRecord> SYS_USER_PKEY = Internal.createUniqueKey(SysUser.SYS_USER, DSL.name("sys_user_pkey"), new TableField[] { SysUser.SYS_USER.ID }, true);
     public static final UniqueKey<SysUserRecord> SYS_USER_USERNAME_KEY = Internal.createUniqueKey(SysUser.SYS_USER, DSL.name("sys_user_username_key"), new TableField[] { SysUser.SYS_USER.USERNAME }, true);
     public static final UniqueKey<SysUserRoleRecord> SYS_USER_ROLE_PKEY = Internal.createUniqueKey(SysUserRole.SYS_USER_ROLE, DSL.name("sys_user_role_pkey"), new TableField[] { SysUserRole.SYS_USER_ROLE.USER_ID, SysUserRole.SYS_USER_ROLE.ROLE_ID }, true);
+    public static final UniqueKey<SysUserSocialRecord> SYS_USER_SOCIAL_PKEY = Internal.createUniqueKey(SysUserSocial.SYS_USER_SOCIAL, DSL.name("sys_user_social_pkey"), new TableField[] { SysUserSocial.SYS_USER_SOCIAL.ID }, true);
+    public static final UniqueKey<SysUserSocialRecord> UK_SOCIAL_PROVIDER = Internal.createUniqueKey(SysUserSocial.SYS_USER_SOCIAL, DSL.name("uk_social_provider"), new TableField[] { SysUserSocial.SYS_USER_SOCIAL.PROVIDER, SysUserSocial.SYS_USER_SOCIAL.PROVIDER_ID }, true);
 }
