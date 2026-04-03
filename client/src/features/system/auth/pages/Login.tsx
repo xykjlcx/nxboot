@@ -1,8 +1,9 @@
-import { Card, Form, Input, Button, message } from "antd";
+import { Form, Input, Button, message } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { post } from "@/app/request";
 import { useAuth } from "@/shared/hooks/useAuth";
+import styles from "./Login.module.css";
 
 interface LoginForm {
   username: string;
@@ -11,6 +12,7 @@ interface LoginForm {
 
 interface LoginResult {
   token: string;
+  refreshToken: string;
 }
 
 export default function Login() {
@@ -20,8 +22,8 @@ export default function Login() {
 
   const handleSubmit = async (values: LoginForm) => {
     try {
-      const { token } = await post<LoginResult>("/api/v1/auth/login", values);
-      setToken(token);
+      const { token, refreshToken } = await post<LoginResult>("/api/v1/auth/login", values);
+      setToken(token, refreshToken);
       message.success("登录成功");
       navigate("/", { replace: true });
     } catch {
@@ -30,16 +32,12 @@ export default function Login() {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        background: "var(--color-bg-page)",
-      }}
-    >
-      <Card title="NxBoot 管理系统" style={{ width: 400 }}>
+    <div className={styles.container}>
+      <div className={styles.card}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>NxBoot</h1>
+          <p className={styles.subtitle}>企业级管理系统脚手架</p>
+        </div>
         <Form form={form} onFinish={handleSubmit} autoComplete="off" size="large">
           <Form.Item name="username" rules={[{ required: true, message: "请输入用户名" }]}>
             <Input prefix={<UserOutlined />} placeholder="用户名" />
@@ -47,13 +45,13 @@ export default function Login() {
           <Form.Item name="password" rules={[{ required: true, message: "请输入密码" }]}>
             <Input.Password prefix={<LockOutlined />} placeholder="密码" />
           </Form.Item>
-          <Form.Item>
+          <Form.Item style={{ marginBottom: 0 }}>
             <Button type="primary" htmlType="submit" block>
               登录
             </Button>
           </Form.Item>
         </Form>
-      </Card>
+      </div>
     </div>
   );
 }
