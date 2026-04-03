@@ -13,6 +13,8 @@ spring:
 nxboot:
   jwt:
     secret: nxboot-dev-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256
+  cors:
+    allowed-origins: http://localhost:5173,http://localhost:5174
 
 logging:
   level:

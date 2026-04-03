@@ -17,8 +17,20 @@ AI 友好型全栈管理系统脚手架。基于 JDK 21 + Spring Boot 3 + jOOQ +
 ```bash
 cd server
 mvn clean package -DskipTests
+
+# 开发环境（必须显式指定 profile）
 java -jar nxboot-admin/target/nxboot-admin.jar --spring.profiles.active=dev
+
+# 生产环境（必须配置环境变量）
+export NXBOOT_JWT_SECRET=your-secret-at-least-256-bits
+export DB_URL=jdbc:postgresql://host:5432/nxboot
+export DB_USERNAME=postgres
+export DB_PASSWORD=your-password
+export NXBOOT_CORS_ORIGINS=https://your-domain.com
+java -jar nxboot-admin/target/nxboot-admin.jar --spring.profiles.active=prod
 ```
+
+> **注意**：不指定 `--spring.profiles.active` 时，JWT secret 和数据库连接未配置会导致启动失败。这是有意为之的安全设计。
 
 ### 前端
 

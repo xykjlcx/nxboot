@@ -404,8 +404,15 @@ const { has } = usePerm();
 ```bash
 cd server
 mvn clean package -DskipTests
+
+# 开发环境（必须显式指定 profile）
 java -jar nxboot-admin/target/nxboot-admin.jar --spring.profiles.active=dev
+
+# 生产环境（必须配置环境变量）
+java -jar nxboot-admin/target/nxboot-admin.jar --spring.profiles.active=prod
 ```
+
+> **安全设计**：不指定 profile 时 JWT secret 未配置，应用会启动失败。dev profile 提供开发默认值，prod 必须通过环境变量配置。
 
 ### 前端
 
@@ -420,11 +427,11 @@ pnpm build      # 生产构建
 
 | 变量 | 说明 |
 |------|------|
-| `NXBOOT_JWT_SECRET` | JWT 签名密钥（至少 256 位） |
+| `NXBOOT_JWT_SECRET` | JWT 签名密钥（至少 256 位），非 dev 环境必须配置 |
 | `DB_URL` | PostgreSQL 连接地址 |
 | `DB_USERNAME` | 数据库用户名 |
 | `DB_PASSWORD` | 数据库密码 |
-| `nxboot.cors.allowed-origins` | CORS 允许的域名（逗号分隔，默认 `*`） |
+| `NXBOOT_CORS_ORIGINS` | CORS 允许的前端来源（逗号分隔），未配置时禁止跨域 |
 | `nxboot.file.storage-type` | 文件存储类型：`local`（默认）或 `oss` |
 | `nxboot.file.upload-dir` | 本地存储路径（默认 `./uploads`） |
 

@@ -1,8 +1,6 @@
 spring:
   application:
     name: nxboot
-  profiles:
-    active: dev
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
@@ -34,9 +32,13 @@ server:
 
 nxboot:
   jwt:
-    secret: ${NXBOOT_JWT_SECRET:change-me-in-production-must-be-at-least-256-bits}
+    # 必须通过环境变量或 profile 配置提供，未配置时启动失败（安全兜底）
+    secret: ${NXBOOT_JWT_SECRET}
     expiration: ${NXBOOT_JWT_EXPIRATION:86400000}
     refresh-expiration: ${NXBOOT_JWT_REFRESH_EXPIRATION:604800000}
+  cors:
+    # 必须显式配置允许的前端来源，未配置时禁止跨域（同源访问仍可用）
+    allowed-origins: ${NXBOOT_CORS_ORIGINS:}
   file:
     upload-dir: ./uploads
   # OAuth2 社会化登录配置（按需启用）
