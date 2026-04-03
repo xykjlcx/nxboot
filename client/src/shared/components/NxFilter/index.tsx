@@ -23,9 +23,12 @@ export function NxFilter<T extends object>({
   const [values, setValues] = useState<T>(initialValues);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // 计算有效筛选项数量
-  const activeCount = Object.values(values as Record<string, unknown>).filter(
-    (v) => v !== undefined && v !== null && v !== "",
+  // 计算有效筛选项数量（排除与初始值相同的字段，避免 pageNum/pageSize 被计入）
+  const activeCount = Object.entries(values as Record<string, unknown>).filter(
+    ([key, v]) => {
+      const init = (initialValues as Record<string, unknown>)[key];
+      return v !== init && v !== undefined && v !== null && v !== "";
+    },
   ).length;
 
   const handleChange = useCallback(

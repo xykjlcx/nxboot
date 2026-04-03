@@ -1,0 +1,22 @@
+/* 表头 */
+.table :global(.ant-table-thead > tr > th),
+.table :global(.ant-table-thead > tr > td) {
+  font-weight: 500;
+  color: var(--color-text-secondary, rgba(0, 0, 0, 0.65));
+  font-size: 13px;
+}
+
+/* 单元格 */
+.table :global(.ant-table-tbody > tr > td) {
+  font-size: 13px;
+}
+
+/* 行 hover — 使用主色浅底，视觉统一 */
+.table :global(.ant-table-tbody > tr.ant-table-row:hover > td) {
+  background: var(--color-primary-bg, #e6f4ff) !important;
+}
+
+/* 分页器间距 */
+.table :global(.ant-pagination) {
+  margin-top: 16px !important;
+}

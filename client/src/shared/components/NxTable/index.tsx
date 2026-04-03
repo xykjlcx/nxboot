@@ -1,64 +1,78 @@
-import { useCallback, useEffect, useRef, type CSSProperties } from "react";
-import { AgGridReact, type AgGridReactProps } from "ag-grid-react";
-import type { ColDef, ColumnState } from "ag-grid-community";
-import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+import { Empty, Table } from "antd";
+import type { TableProps } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import type { NxColumn, NxTableProps } from "./types";
+import styles from "./index.module.css";
 
-// 注册 AG Grid 社区模块
-ModuleRegistry.registerModules([AllCommunityModule]);
+/* ---- 适配器：NxColumn → Ant Design ColumnsType ---- */
 
-interface NxTableProps<T> extends Omit<AgGridReactProps<T>, "defaultColDef"> {
-  /** 用于持久化列配置的 key */
-  storageKey?: string;
-  /** 容器样式 */
-  style?: CSSProperties;
-  /** 列定义 */
-  columnDefs: ColDef<T>[];
+function toAntdColumns<T>(columns: NxColumn<T>[]): ColumnsType<T> {
+  return columns.map((col) => ({
+    dataIndex: col.field,
+    key: col.field,
+    title: col.title,
+    width: col.width,
+    fixed: col.fixed,
+    align: col.align,
+    ellipsis: col.ellipsis ? { showTitle: true } : undefined,
+    render: col.render,
+    sorter: col.sorter === true ? true : typeof col.sorter === "function" ? col.sorter : undefined,
+    children: col.children ? toAntdColumns(col.children) : undefined,
+  }));
 }
 
-/** AG Grid 薄封装：列配置持久化 + 自适应高度 + 默认列设置 */
-export function NxTable<T>({ storageKey, style, columnDefs, ...rest }: NxTableProps<T>) {
-  const gridRef = useRef<AgGridReact<T>>(null);
+/**
+ * 统一表格组件——屏蔽底层引擎差异。
+ *
+ * 当前引擎：Ant Design Table。
+ * 后续可按需接入 AG Grid（复杂编辑场景），对外 API 不变。
+ */
+export function NxTable<T extends object>({
+  columns,
+  data,
+  rowKey = "id",
+  loading,
+  pagination,
+  scroll,
+  size = "small",
+  onRow,
+  rowSelection,
+  expandable,
+  className,
+}: NxTableProps<T>) {
+  const antdColumns = toAntdColumns(columns);
 
-  // 恢复列配置
-  useEffect(() => {
-    if (!storageKey) return;
-    const saved = localStorage.getItem(`nx-col-${storageKey}`);
-    if (saved) {
-      try {
-        const state = JSON.parse(saved) as ColumnState[];
-        gridRef.current?.api?.applyColumnState({ state, applyOrder: true });
-      } catch {
-        // 忽略无效数据
-      }
-    }
-  }, [storageKey]);
-
-  // 保存列配置
-  const handleColumnChanged = useCallback(() => {
-    if (!storageKey || !gridRef.current?.api) return;
-    const state = gridRef.current.api.getColumnState();
-    localStorage.setItem(`nx-col-${storageKey}`, JSON.stringify(state));
-  }, [storageKey]);
-
-  const defaultColDef: ColDef<T> = {
-    resizable: true,
-    sortable: true,
-    minWidth: 80,
-  };
+  const paginationConfig =
+    pagination === false
+      ? false
+      : pagination
+        ? {
+            current: pagination.current ?? 1,
+            pageSize: pagination.pageSize ?? 20,
+            total: pagination.total ?? 0,
+            onChange: pagination.onChange,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total: number) => `共 ${total} 条`,
+          }
+        : false;
 
   return (
-    <div style={{ width: "100%", height: "100%", flex: 1, ...style }}>
-      <AgGridReact<T>
-        ref={gridRef}
-        columnDefs={columnDefs}
-        defaultColDef={defaultColDef}
-        onColumnResized={handleColumnChanged}
-        onColumnMoved={handleColumnChanged}
-        onSortChanged={handleColumnChanged}
-        suppressMovableColumns={false}
-        animateRows
-        {...rest}
-      />
-    </div>
+    <Table<T>
+      columns={antdColumns}
+      dataSource={data}
+      rowKey={rowKey}
+      loading={loading}
+      pagination={paginationConfig}
+      scroll={scroll}
+      size={size}
+      onRow={onRow as TableProps<T>["onRow"]}
+      rowSelection={rowSelection}
+      expandable={expandable as TableProps<T>["expandable"]}
+      locale={{ emptyText: <Empty description="暂无数据" /> }}
+      className={`${styles.table} ${className ?? ""}`.trim()}
+    />
   );
 }
+
+export type { NxColumn, NxPagination, NxTableProps } from "./types";
