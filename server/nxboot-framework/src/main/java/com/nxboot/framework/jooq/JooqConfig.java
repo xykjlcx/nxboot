@@ -4,6 +4,7 @@ import com.nxboot.common.util.SnowflakeIdGenerator;
 import org.jooq.conf.RenderNameCase;
 import org.jooq.conf.RenderQuotedNames;
 import org.jooq.impl.DefaultConfiguration;
+import org.jooq.impl.DefaultExecuteListenerProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.jooq.DefaultConfigurationCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +26,8 @@ public class JooqConfig {
             config.settings()
                     .withRenderNameCase(RenderNameCase.LOWER)
                     .withRenderQuotedNames(RenderQuotedNames.NEVER);
+            // 注册慢查询监听器
+            config.set(new DefaultExecuteListenerProvider(new SlowQueryListener()));
         };
     }
 
