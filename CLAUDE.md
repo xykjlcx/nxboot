@@ -461,12 +461,10 @@ pnpm build      # 生产构建
 - **不要**绕过 `request.ts` 直接用 axios
 - **不要**在 commit 中包含 `application-prod.yml` 的真实密码
 
-## 已知限制（v8.1）
+## 已知限制（v8.2）
 
-- jOOQ codegen 已启用（16 张表），但仅 ConfigRepository 完成类型安全迁移，其他 Repository 仍用字符串引用
-- 审计字段需手动填充（已有 JooqHelper 简化）
+- DataScopeAspect 中 5 处 `DSL.field()` 为运行时动态别名，无法用 codegen 替代
 - 图标全量导入（`import * as Icons`）——动态 icon 名无法 tree-shake，需从菜单表单端加 icon picker 约束
 - 前端 i18n 仅覆盖框架层文本，业务页面硬编码中文
-- 前端监控 Dashboard 页面缺失（后端 API 已有）
 - 无代码生成器
 - 无单元测试
