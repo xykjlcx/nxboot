@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <jdbc>
+        <driver>org.postgresql.Driver</driver>
+        <url>jdbc:postgresql://localhost:5432/nxboot</url>
+        <user>ocean</user>
+        <password></password>
+    </jdbc>
+    <generator>
+        <database>
+            <name>org.jooq.meta.postgres.PostgresDatabase</name>
+            <inputSchema>public</inputSchema>
+            <includes>sys_.*</includes>
+            <excludes></excludes>
+        </database>
+        <generate>
+            <records>true</records>
+            <pojos>false</pojos>
+            <daos>false</daos>
+            <fluentSetters>true</fluentSetters>
+        </generate>
+        <target>
+            <packageName>com.nxboot.generated.jooq</packageName>
+            <directory>../nxboot-system/src/main/java</directory>
+        </target>
+    </generator>
+</configuration>
