@@ -1,10 +1,11 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { NxLoading } from "@/shared/components/NxLoading";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 import { AuthGuard } from "./auth-guard";
 import { BasicLayout } from "./layouts/BasicLayout";
 import { BlankLayout } from "./layouts/BlankLayout";
+import { DefaultRedirect } from "./DefaultRedirect";
 
 // 懒加载页面
 const Login = lazy(() => import("@/features/system/auth/pages/Login"));
@@ -51,12 +52,12 @@ export const router = createBrowserRouter([
         element: <BasicLayout />,
         errorElement: <RouteErrorBoundary />,
         children: [
-          { index: true, element: <Navigate to="/system/user" replace /> },
+          { index: true, element: <DefaultRedirect />, errorElement: <RouteErrorBoundary /> },
           {
             path: "system",
             errorElement: <RouteErrorBoundary />,
             children: [
-              { index: true, element: <Navigate to="/system/user" replace /> },
+              { index: true, element: <DefaultRedirect />, errorElement: <RouteErrorBoundary /> },
               { path: "user", element: <LazyLoad><UserList /></LazyLoad>, errorElement: <RouteErrorBoundary /> },
               { path: "role", element: <LazyLoad><RoleList /></LazyLoad>, errorElement: <RouteErrorBoundary /> },
               { path: "menu", element: <LazyLoad><MenuList /></LazyLoad>, errorElement: <RouteErrorBoundary /> },

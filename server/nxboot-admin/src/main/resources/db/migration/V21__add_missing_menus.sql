@@ -23,12 +23,12 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 2010);
 INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 2011);
 
 -- 修正部门管理 sort_order 避免与菜单管理冲突
+-- 仅在 sort_order 仍为初始默认值时才更新，不覆盖用户手工调整
 UPDATE sys_menu SET sort_order = 3 WHERE id = 1080 AND sort_order = 3;
--- 菜单管理调整为 4（原 3），后续顺延
-UPDATE sys_menu SET sort_order = 4 WHERE id = 1003;
-UPDATE sys_menu SET sort_order = 5 WHERE id = 1004;
-UPDATE sys_menu SET sort_order = 6 WHERE id = 1005;
-UPDATE sys_menu SET sort_order = 7 WHERE id = 1006;
-UPDATE sys_menu SET sort_order = 8 WHERE id = 1007;
-UPDATE sys_menu SET sort_order = 9 WHERE id = 1008;
-UPDATE sys_menu SET sort_order = 12 WHERE id = 1009;
+UPDATE sys_menu SET sort_order = 4 WHERE id = 1003 AND sort_order = 3;
+UPDATE sys_menu SET sort_order = 5 WHERE id = 1004 AND sort_order = 4;
+UPDATE sys_menu SET sort_order = 6 WHERE id = 1005 AND sort_order = 5;
+UPDATE sys_menu SET sort_order = 7 WHERE id = 1006 AND sort_order = 6;
+UPDATE sys_menu SET sort_order = 8 WHERE id = 1007 AND sort_order = 7;
+UPDATE sys_menu SET sort_order = 9 WHERE id = 1008 AND sort_order = 8;
+UPDATE sys_menu SET sort_order = 12 WHERE id = 1009 AND sort_order = 9;
