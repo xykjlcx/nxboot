@@ -3,6 +3,7 @@ package com.nxboot.system.user.repository;
 import com.nxboot.common.base.PageResult;
 import com.nxboot.common.constant.Constants;
 import com.nxboot.common.util.SnowflakeIdGenerator;
+import com.nxboot.framework.jooq.JooqHelper;
 import com.nxboot.system.user.model.UserVO;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -22,6 +23,8 @@ import static org.jooq.impl.DSL.table;
 @Repository
 public class UserRepository {
 
+    private static final String TABLE = "sys_user";
+
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
 
@@ -34,44 +37,20 @@ public class UserRepository {
      * 分页查询用户
      */
     public PageResult<UserVO> page(int offset, int size, String keyword) {
-        Condition condition = field("deleted").eq(Constants.NOT_DELETED);
-        if (keyword != null && !keyword.isBlank()) {
-            condition = condition.and(
-                    field("username").likeIgnoreCase("%" + keyword + "%")
-                            .or(field("nickname").likeIgnoreCase("%" + keyword + "%"))
-            );
+        Condition extra = JooqHelper.keywordCondition(keyword, "username", "nickname");
+        // 合并数据权限条件
+        Condition dataScope = JooqHelper.dataScopeCondition();
+        if (dataScope != null) {
+            extra = extra != null ? extra.and(dataScope) : dataScope;
         }
-
-        long total = dsl.selectCount()
-                .from(table("sys_user"))
-                .where(condition)
-                .fetchOneInto(Long.class);
-
-        if (total == 0) {
-            return PageResult.empty();
-        }
-
-        List<UserVO> list = dsl.select()
-                .from(table("sys_user"))
-                .where(condition)
-                .orderBy(field("create_time").desc())
-                .offset(offset)
-                .limit(size)
-                .fetch(r -> toVO(r, null));
-
-        return PageResult.of(list, total);
+        return JooqHelper.page(dsl, TABLE, extra, offset, size, r -> toVO(r, null));
     }
 
     /**
      * 根据 ID 查询用户
      */
     public UserVO findById(Long id) {
-        Record record = dsl.select()
-                .from(table("sys_user"))
-                .where(field("id").eq(id))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
-                .fetchOne();
-
+        Record record = JooqHelper.findById(dsl, TABLE, id);
         if (record == null) {
             return null;
         }
@@ -86,9 +65,9 @@ public class UserRepository {
     public boolean existsByUsername(String username) {
         return dsl.fetchExists(
                 dsl.selectOne()
-                        .from(table("sys_user"))
+                        .from(table(TABLE))
                         .where(field("username").eq(username))
-                        .and(field("deleted").eq(Constants.NOT_DELETED))
+                        .and(JooqHelper.notDeleted())
         );
     }
 
@@ -100,7 +79,7 @@ public class UserRepository {
         Long id = idGenerator.nextId();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table("sys_user"))
+        dsl.insertInto(table(TABLE))
                 .set(field("id"), id)
                 .set(field("username"), username)
                 .set(field("password"), password)
@@ -124,7 +103,7 @@ public class UserRepository {
      */
     public void update(Long id, String nickname, String email, String phone,
                        String avatar, Integer enabled, String remark, String operator) {
-        var step = dsl.update(table("sys_user"))
+        var step = dsl.update(table(TABLE))
                 .set(field("update_by"), operator)
                 .set(field("update_time"), LocalDateTime.now());
 
@@ -135,16 +114,14 @@ public class UserRepository {
         if (enabled != null) step = step.set(field("enabled"), enabled);
         if (remark != null) step = step.set(field("remark"), remark);
 
-        step.where(field("id").eq(id))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
-                .execute();
+        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     /**
      * 更新密码
      */
     public void updatePassword(Long id, String encodedPassword) {
-        dsl.update(table("sys_user"))
+        dsl.update(table(TABLE))
                 .set(field("password"), encodedPassword)
                 .set(field("update_time"), LocalDateTime.now())
                 .where(field("id").eq(id))
@@ -155,12 +132,7 @@ public class UserRepository {
      * 逻辑删除
      */
     public void softDelete(Long id, String operator) {
-        dsl.update(table("sys_user"))
-                .set(field("deleted"), Constants.DELETED)
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now())
-                .where(field("id").eq(id))
-                .execute();
+        JooqHelper.softDelete(dsl, TABLE, id, operator);
     }
 
     /**
@@ -194,16 +166,17 @@ public class UserRepository {
     }
 
     private UserVO toVO(Record r, List<Long> roleIds) {
-        Integer enabledVal = r.get(field("enabled", Integer.class));
+        Integer enabledVal = r.get("enabled", Integer.class);
         return new UserVO(
-                r.get(field("id", Long.class)),
-                r.get(field("username", String.class)),
-                r.get(field("nickname", String.class)),
-                r.get(field("email", String.class)),
-                r.get(field("phone", String.class)),
-                r.get(field("avatar", String.class)),
+                r.get("id", Long.class),
+                r.get("username", String.class),
+                r.get("nickname", String.class),
+                r.get("email", String.class),
+                r.get("phone", String.class),
+                r.get("avatar", String.class),
+                r.get("dept_id", Long.class),
                 enabledVal != null && enabledVal == 1,
-                r.get(field("remark", String.class)),
+                r.get("remark", String.class),
                 r.get("create_time", LocalDateTime.class),
                 roleIds != null ? roleIds : Collections.emptyList()
         );

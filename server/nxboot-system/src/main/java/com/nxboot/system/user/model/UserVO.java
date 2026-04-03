@@ -13,6 +13,7 @@ public record UserVO(
         String email,
         String phone,
         String avatar,
+        Long deptId,
         Boolean enabled,
         String remark,
         LocalDateTime createTime,

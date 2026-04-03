@@ -1,7 +1,10 @@
 package com.nxboot.system.user.service;
 
+import com.nxboot.common.annotation.DataScope;
 import com.nxboot.common.base.PageQuery;
 import com.nxboot.common.base.PageResult;
+
+import java.util.List;
 import com.nxboot.common.exception.BusinessException;
 import com.nxboot.common.exception.ErrorCode;
 import com.nxboot.common.util.AssertUtils;
@@ -28,10 +31,18 @@ public class UserService {
     }
 
     /**
-     * 分页查询
+     * 分页查询（数据权限过滤）
      */
+    @DataScope
     public PageResult<UserVO> page(PageQuery query, String keyword) {
         return userRepository.page(query.offset(), query.pageSize(), keyword);
+    }
+
+    /**
+     * 查询全部（导出用，不分页）
+     */
+    public List<UserVO> listAll(String keyword) {
+        return userRepository.page(0, Integer.MAX_VALUE, keyword).list();
     }
 
     /**
