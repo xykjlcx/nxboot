@@ -17,18 +17,25 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
+    private static final String CLAIM_TOKEN_TYPE = "type";
+    private static final String TOKEN_TYPE_ACCESS = "access";
+    private static final String TOKEN_TYPE_REFRESH = "refresh";
+
     private final SecretKey key;
     private final long expiration;
+    private final long refreshExpiration;
 
     public JwtTokenProvider(
             @Value("${nxboot.jwt.secret}") String secret,
-            @Value("${nxboot.jwt.expiration}") long expiration) {
+            @Value("${nxboot.jwt.expiration}") long expiration,
+            @Value("${nxboot.jwt.refresh-expiration:604800000}") long refreshExpiration) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expiration = expiration;
+        this.refreshExpiration = refreshExpiration;
     }
 
     /**
-     * 生成 JWT 令牌
+     * 生成访问令牌
      */
     public String generateToken(Long userId, String username) {
         Date now = new Date();
@@ -37,6 +44,24 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(username)
                 .claim("userId", userId)
+                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ACCESS)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(key)
+                .compact();
+    }
+
+    /**
+     * 生成刷新令牌（有效期 7 天）
+     */
+    public String generateRefreshToken(Long userId, String username) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + refreshExpiration);
+
+        return Jwts.builder()
+                .subject(username)
+                .claim("userId", userId)
+                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_REFRESH)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(key)
@@ -58,17 +83,41 @@ public class JwtTokenProvider {
     }
 
     /**
-     * 验证令牌是否有效
+     * 验证访问令牌是否有效
      */
     public boolean validateToken(String token) {
         try {
-            parseClaims(token);
-            return true;
+            Claims claims = parseClaims(token);
+            // 只接受 access 类型（兼容旧令牌：无 type 字段视为 access）
+            String type = claims.get(CLAIM_TOKEN_TYPE, String.class);
+            return type == null || TOKEN_TYPE_ACCESS.equals(type);
         } catch (ExpiredJwtException e) {
             return false;
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * 验证刷新令牌是否有效，有效则返回 Claims，否则返回 null
+     */
+    public Claims validateRefreshToken(String token) {
+        try {
+            Claims claims = parseClaims(token);
+            if (!TOKEN_TYPE_REFRESH.equals(claims.get(CLAIM_TOKEN_TYPE, String.class))) {
+                return null;
+            }
+            return claims;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取令牌过期时间戳（毫秒）
+     */
+    public long getExpirationTime(String token) {
+        return parseClaims(token).getExpiration().getTime();
     }
 
     private Claims parseClaims(String token) {

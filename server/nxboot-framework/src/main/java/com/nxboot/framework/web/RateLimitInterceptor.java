@@ -25,16 +25,29 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     /** 超过 1 小时未访问的条目将被清理 */
     private static final long EXPIRE_MILLIS = 60 * 60 * 1000L;
 
-    /** IP -> BucketEntry 映射 */
+    /** IP -> BucketEntry 映射（通用限流） */
     private final Map<String, BucketEntry> buckets = new ConcurrentHashMap<>();
+
+    /** IP -> BucketEntry 映射（登录限流，更严格） */
+    private final Map<String, BucketEntry> loginBuckets = new ConcurrentHashMap<>();
+
+    /** 登录接口路径前缀 */
+    private static final String LOGIN_PATH = "/api/v1/auth/login";
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
                              Object handler) throws Exception {
         String ip = getClientIp(request);
-        BucketEntry entry = buckets.compute(ip, (k, existing) -> {
+        String uri = request.getRequestURI();
+
+        // 登录接口使用更严格的限流策略
+        Map<String, BucketEntry> targetBuckets = uri.startsWith(LOGIN_PATH) ? loginBuckets : buckets;
+        boolean isLogin = uri.startsWith(LOGIN_PATH);
+
+        BucketEntry entry = targetBuckets.compute(ip, (k, existing) -> {
             if (existing == null) {
-                return new BucketEntry(createBucket(), System.currentTimeMillis());
+                Bucket bucket = isLogin ? createLoginBucket() : createBucket();
+                return new BucketEntry(bucket, System.currentTimeMillis());
             }
             return new BucketEntry(existing.bucket, System.currentTimeMillis());
         });
@@ -55,7 +68,12 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     @Scheduled(fixedRate = 10 * 60 * 1000)
     public void cleanup() {
         long now = System.currentTimeMillis();
-        Iterator<Map.Entry<String, BucketEntry>> it = buckets.entrySet().iterator();
+        cleanupMap(buckets, now);
+        cleanupMap(loginBuckets, now);
+    }
+
+    private void cleanupMap(Map<String, BucketEntry> map, long now) {
+        Iterator<Map.Entry<String, BucketEntry>> it = map.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, BucketEntry> entry = it.next();
             if (now - entry.getValue().lastAccessTime > EXPIRE_MILLIS) {
@@ -71,6 +89,17 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         Bandwidth bandwidth = Bandwidth.builder()
                 .capacity(50)
                 .refillGreedy(20, Duration.ofSeconds(1))
+                .build();
+        return Bucket.builder().addLimit(bandwidth).build();
+    }
+
+    /**
+     * 创建登录限流令牌桶：10 秒内最多 5 次，防止暴力破解
+     */
+    private Bucket createLoginBucket() {
+        Bandwidth bandwidth = Bandwidth.builder()
+                .capacity(5)
+                .refillGreedy(5, Duration.ofSeconds(10))
                 .build();
         return Bucket.builder().addLimit(bandwidth).build();
     }

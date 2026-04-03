@@ -22,10 +22,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final UserDetailsService userDetailsService;
+    private final TokenBlacklist tokenBlacklist;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider,
+                                   UserDetailsService userDetailsService,
+                                   TokenBlacklist tokenBlacklist) {
         this.tokenProvider = tokenProvider;
         this.userDetailsService = userDetailsService;
+        this.tokenBlacklist = tokenBlacklist;
     }
 
     @Override
@@ -34,6 +38,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
 
         if (token != null && tokenProvider.validateToken(token)) {
+            // 检查黑名单（强制下线）
+            if (tokenBlacklist.contains(token)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             String username = tokenProvider.getUsernameFromToken(token);
             var userDetails = userDetailsService.loadUserByUsername(username);
 

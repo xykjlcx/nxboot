@@ -3,10 +3,12 @@ package com.nxboot.framework.web;
 import com.nxboot.common.exception.BusinessException;
 import com.nxboot.common.exception.NotFoundException;
 import com.nxboot.common.result.R;
+import com.nxboot.framework.i18n.I18nHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,7 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.stream.Collectors;
 
 /**
- * 全局异常处理
+ * 全局异常处理（支持 i18n）
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -44,16 +46,22 @@ public class GlobalExceptionHandler {
         return R.fail(400, message);
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public R<Void> handleAuthenticationException(AuthenticationException e) {
+        return R.fail(401, I18nHelper.get("error.unauthorized"));
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public R<Void> handleAccessDenied(AccessDeniedException e) {
-        return R.fail(403, "无权限访问");
+        return R.fail(403, I18nHelper.get("error.forbidden"));
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public R<Void> handleException(Exception e) {
         log.error("未处理异常", e);
-        return R.fail(500, "服务器内部错误");
+        return R.fail(500, I18nHelper.get("error.unknown"));
     }
 }
