@@ -14,16 +14,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysDept.SYS_DEPT;
 
 /**
  * 部门数据访问
  */
 @Repository
 public class DeptRepository {
-
-    private static final String TABLE = "sys_dept";
 
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
@@ -38,9 +35,9 @@ public class DeptRepository {
      */
     public List<DeptVO> findAll() {
         return dsl.select()
-                .from(table(TABLE))
+                .from(SYS_DEPT)
                 .where(JooqHelper.notDeleted())
-                .orderBy(field("sort_order").asc())
+                .orderBy(SYS_DEPT.SORT_ORDER.asc())
                 .fetch(this::toVO);
     }
 
@@ -56,7 +53,7 @@ public class DeptRepository {
      * 根据 ID 查询
      */
     public DeptVO findById(Long id) {
-        Record record = JooqHelper.findById(dsl, TABLE, id);
+        Record record = JooqHelper.findById(dsl, SYS_DEPT, id);
         return record != null ? toVO(record) : null;
     }
 
@@ -65,14 +62,14 @@ public class DeptRepository {
      */
     public Long insert(Long parentId, String deptName, Integer sortOrder,
                        String leader, String phone, String email, String operator) {
-        var step = dsl.insertInto(table(TABLE))
-                .set(field("parent_id"), parentId != null ? parentId : 0L)
-                .set(field("dept_name"), deptName)
-                .set(field("sort_order"), sortOrder != null ? sortOrder : 0)
-                .set(field("leader"), leader)
-                .set(field("phone"), phone)
-                .set(field("email"), email)
-                .set(field("enabled"), Constants.ENABLED);
+        var step = dsl.insertInto(SYS_DEPT)
+                .set(SYS_DEPT.PARENT_ID, parentId != null ? parentId : 0L)
+                .set(SYS_DEPT.DEPT_NAME, deptName)
+                .set(SYS_DEPT.SORT_ORDER, sortOrder != null ? sortOrder : 0)
+                .set(SYS_DEPT.LEADER, leader)
+                .set(SYS_DEPT.PHONE, phone)
+                .set(SYS_DEPT.EMAIL, email)
+                .set(SYS_DEPT.ENABLED, Constants.ENABLED);
 
         Long id = JooqHelper.setAuditInsert(step, idGenerator, operator);
         step.execute();
@@ -85,26 +82,26 @@ public class DeptRepository {
     public void update(Long id, Long parentId, String deptName, Integer sortOrder,
                        String leader, String phone, String email,
                        Boolean enabled, String operator) {
-        var step = dsl.update(table(TABLE))
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now());
+        var step = dsl.update(SYS_DEPT)
+                .set(SYS_DEPT.UPDATE_BY, operator)
+                .set(SYS_DEPT.UPDATE_TIME, LocalDateTime.now());
 
-        if (parentId != null) step = step.set(field("parent_id"), parentId);
-        if (deptName != null) step = step.set(field("dept_name"), deptName);
-        if (sortOrder != null) step = step.set(field("sort_order"), sortOrder);
-        if (leader != null) step = step.set(field("leader"), leader);
-        if (phone != null) step = step.set(field("phone"), phone);
-        if (email != null) step = step.set(field("email"), email);
-        if (enabled != null) step = step.set(field("enabled"), enabled ? Constants.ENABLED : Constants.DISABLED);
+        if (parentId != null) step = step.set(SYS_DEPT.PARENT_ID, parentId);
+        if (deptName != null) step = step.set(SYS_DEPT.DEPT_NAME, deptName);
+        if (sortOrder != null) step = step.set(SYS_DEPT.SORT_ORDER, sortOrder);
+        if (leader != null) step = step.set(SYS_DEPT.LEADER, leader);
+        if (phone != null) step = step.set(SYS_DEPT.PHONE, phone);
+        if (email != null) step = step.set(SYS_DEPT.EMAIL, email);
+        if (enabled != null) step = step.set(SYS_DEPT.ENABLED, enabled ? Constants.ENABLED : Constants.DISABLED);
 
-        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_DEPT.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     /**
      * 逻辑删除
      */
     public void softDelete(Long id, String operator) {
-        JooqHelper.softDelete(dsl, TABLE, id, operator);
+        JooqHelper.softDelete(dsl, SYS_DEPT, id, operator);
     }
 
     /**
@@ -113,8 +110,8 @@ public class DeptRepository {
     public boolean hasChildren(Long parentId) {
         return dsl.fetchExists(
                 dsl.selectOne()
-                        .from(table(TABLE))
-                        .where(field("parent_id").eq(parentId))
+                        .from(SYS_DEPT)
+                        .where(SYS_DEPT.PARENT_ID.eq(parentId))
                         .and(JooqHelper.notDeleted())
         );
     }
@@ -145,17 +142,17 @@ public class DeptRepository {
      * Record → DeptVO 转换
      */
     private DeptVO toVO(Record r) {
-        Integer enabledVal = r.get("enabled", Integer.class);
+        Integer enabledVal = r.get(SYS_DEPT.ENABLED);
         return new DeptVO(
-                r.get("id", Long.class),
-                r.get("parent_id", Long.class),
-                r.get("dept_name", String.class),
-                r.get("sort_order", Integer.class),
-                r.get("leader", String.class),
-                r.get("phone", String.class),
-                r.get("email", String.class),
+                r.get(SYS_DEPT.ID),
+                r.get(SYS_DEPT.PARENT_ID),
+                r.get(SYS_DEPT.DEPT_NAME),
+                r.get(SYS_DEPT.SORT_ORDER),
+                r.get(SYS_DEPT.LEADER),
+                r.get(SYS_DEPT.PHONE),
+                r.get(SYS_DEPT.EMAIL),
                 enabledVal != null && enabledVal == 1,
-                r.get("create_time", LocalDateTime.class),
+                r.get(SYS_DEPT.CREATE_TIME),
                 null
         );
     }

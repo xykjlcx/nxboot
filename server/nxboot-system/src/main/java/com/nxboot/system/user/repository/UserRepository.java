@@ -14,16 +14,14 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysUser.SYS_USER;
+import static com.nxboot.generated.jooq.tables.SysUserRole.SYS_USER_ROLE;
 
 /**
  * 用户数据访问
  */
 @Repository
 public class UserRepository {
-
-    private static final String TABLE = "sys_user";
 
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
@@ -37,20 +35,20 @@ public class UserRepository {
      * 分页查询用户
      */
     public PageResult<UserVO> page(int offset, int size, String keyword) {
-        Condition extra = JooqHelper.keywordCondition(keyword, "username", "nickname");
+        Condition extra = JooqHelper.keywordCondition(keyword, SYS_USER.USERNAME, SYS_USER.NICKNAME);
         // 合并数据权限条件
         Condition dataScope = JooqHelper.dataScopeCondition();
         if (dataScope != null) {
             extra = extra != null ? extra.and(dataScope) : dataScope;
         }
-        return JooqHelper.page(dsl, TABLE, extra, offset, size, r -> toVO(r, null));
+        return JooqHelper.page(dsl, SYS_USER, extra, offset, size, r -> toVO(r, null));
     }
 
     /**
      * 根据 ID 查询用户
      */
     public UserVO findById(Long id) {
-        Record record = JooqHelper.findById(dsl, TABLE, id);
+        Record record = JooqHelper.findById(dsl, SYS_USER, id);
         if (record == null) {
             return null;
         }
@@ -65,8 +63,8 @@ public class UserRepository {
     public boolean existsByUsername(String username) {
         return dsl.fetchExists(
                 dsl.selectOne()
-                        .from(table(TABLE))
-                        .where(field("username").eq(username))
+                        .from(SYS_USER)
+                        .where(SYS_USER.USERNAME.eq(username))
                         .and(JooqHelper.notDeleted())
         );
     }
@@ -79,20 +77,20 @@ public class UserRepository {
         Long id = idGenerator.nextId();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table(TABLE))
-                .set(field("id"), id)
-                .set(field("username"), username)
-                .set(field("password"), password)
-                .set(field("nickname"), nickname)
-                .set(field("email"), email)
-                .set(field("phone"), phone)
-                .set(field("remark"), remark)
-                .set(field("enabled"), Constants.ENABLED)
-                .set(field("create_by"), operator)
-                .set(field("create_time"), now)
-                .set(field("update_by"), operator)
-                .set(field("update_time"), now)
-                .set(field("deleted"), Constants.NOT_DELETED)
+        dsl.insertInto(SYS_USER)
+                .set(SYS_USER.ID, id)
+                .set(SYS_USER.USERNAME, username)
+                .set(SYS_USER.PASSWORD, password)
+                .set(SYS_USER.NICKNAME, nickname)
+                .set(SYS_USER.EMAIL, email)
+                .set(SYS_USER.PHONE, phone)
+                .set(SYS_USER.REMARK, remark)
+                .set(SYS_USER.ENABLED, Constants.ENABLED)
+                .set(SYS_USER.CREATE_BY, operator)
+                .set(SYS_USER.CREATE_TIME, now)
+                .set(SYS_USER.UPDATE_BY, operator)
+                .set(SYS_USER.UPDATE_TIME, now)
+                .set(SYS_USER.DELETED, Constants.NOT_DELETED)
                 .execute();
 
         return id;
@@ -103,28 +101,28 @@ public class UserRepository {
      */
     public void update(Long id, String nickname, String email, String phone,
                        String avatar, Integer enabled, String remark, String operator) {
-        var step = dsl.update(table(TABLE))
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now());
+        var step = dsl.update(SYS_USER)
+                .set(SYS_USER.UPDATE_BY, operator)
+                .set(SYS_USER.UPDATE_TIME, LocalDateTime.now());
 
-        if (nickname != null) step = step.set(field("nickname"), nickname);
-        if (email != null) step = step.set(field("email"), email);
-        if (phone != null) step = step.set(field("phone"), phone);
-        if (avatar != null) step = step.set(field("avatar"), avatar);
-        if (enabled != null) step = step.set(field("enabled"), enabled);
-        if (remark != null) step = step.set(field("remark"), remark);
+        if (nickname != null) step = step.set(SYS_USER.NICKNAME, nickname);
+        if (email != null) step = step.set(SYS_USER.EMAIL, email);
+        if (phone != null) step = step.set(SYS_USER.PHONE, phone);
+        if (avatar != null) step = step.set(SYS_USER.AVATAR, avatar);
+        if (enabled != null) step = step.set(SYS_USER.ENABLED, enabled);
+        if (remark != null) step = step.set(SYS_USER.REMARK, remark);
 
-        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_USER.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     /**
      * 更新密码
      */
     public void updatePassword(Long id, String encodedPassword) {
-        dsl.update(table(TABLE))
-                .set(field("password"), encodedPassword)
-                .set(field("update_time"), LocalDateTime.now())
-                .where(field("id").eq(id))
+        dsl.update(SYS_USER)
+                .set(SYS_USER.PASSWORD, encodedPassword)
+                .set(SYS_USER.UPDATE_TIME, LocalDateTime.now())
+                .where(SYS_USER.ID.eq(id))
                 .execute();
     }
 
@@ -132,16 +130,16 @@ public class UserRepository {
      * 逻辑删除
      */
     public void softDelete(Long id, String operator) {
-        JooqHelper.softDelete(dsl, TABLE, id, operator);
+        JooqHelper.softDelete(dsl, SYS_USER, id, operator);
     }
 
     /**
      * 获取用户角色ID列表
      */
     public List<Long> getRoleIds(Long userId) {
-        return dsl.select(field("role_id", Long.class))
-                .from(table("sys_user_role"))
-                .where(field("user_id").eq(userId))
+        return dsl.select(SYS_USER_ROLE.ROLE_ID)
+                .from(SYS_USER_ROLE)
+                .where(SYS_USER_ROLE.USER_ID.eq(userId))
                 .fetchInto(Long.class);
     }
 
@@ -150,14 +148,14 @@ public class UserRepository {
      */
     public void saveUserRoles(Long userId, List<Long> roleIds) {
         // 先删除旧的关联
-        dsl.deleteFrom(table("sys_user_role"))
-                .where(field("user_id").eq(userId))
+        dsl.deleteFrom(SYS_USER_ROLE)
+                .where(SYS_USER_ROLE.USER_ID.eq(userId))
                 .execute();
 
         // 再插入新的关联
         if (roleIds != null && !roleIds.isEmpty()) {
-            var insertStep = dsl.insertInto(table("sys_user_role"),
-                    field("user_id"), field("role_id"));
+            var insertStep = dsl.insertInto(SYS_USER_ROLE,
+                    SYS_USER_ROLE.USER_ID, SYS_USER_ROLE.ROLE_ID);
             for (Long roleId : roleIds) {
                 insertStep = insertStep.values(userId, roleId);
             }
@@ -166,18 +164,18 @@ public class UserRepository {
     }
 
     private UserVO toVO(Record r, List<Long> roleIds) {
-        Integer enabledVal = r.get("enabled", Integer.class);
+        Integer enabledVal = r.get(SYS_USER.ENABLED);
         return new UserVO(
-                r.get("id", Long.class),
-                r.get("username", String.class),
-                r.get("nickname", String.class),
-                r.get("email", String.class),
-                r.get("phone", String.class),
-                r.get("avatar", String.class),
-                r.get("dept_id", Long.class),
+                r.get(SYS_USER.ID),
+                r.get(SYS_USER.USERNAME),
+                r.get(SYS_USER.NICKNAME),
+                r.get(SYS_USER.EMAIL),
+                r.get(SYS_USER.PHONE),
+                r.get(SYS_USER.AVATAR),
+                r.get(SYS_USER.DEPT_ID),
                 enabledVal != null && enabledVal == 1,
-                r.get("remark", String.class),
-                r.get("create_time", LocalDateTime.class),
+                r.get(SYS_USER.REMARK),
+                r.get(SYS_USER.CREATE_TIME),
                 roleIds != null ? roleIds : Collections.emptyList()
         );
     }

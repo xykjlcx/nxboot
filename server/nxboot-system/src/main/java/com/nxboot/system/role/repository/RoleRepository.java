@@ -14,16 +14,14 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysRole.SYS_ROLE;
+import static com.nxboot.generated.jooq.tables.SysRoleMenu.SYS_ROLE_MENU;
 
 /**
  * 角色数据访问
  */
 @Repository
 public class RoleRepository {
-
-    private static final String TABLE = "sys_role";
 
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
@@ -37,8 +35,8 @@ public class RoleRepository {
      * 分页查询
      */
     public PageResult<RoleVO> page(int offset, int size, String keyword) {
-        Condition extra = JooqHelper.keywordCondition(keyword, "role_key", "role_name");
-        return JooqHelper.page(dsl, TABLE, extra, offset, size, r -> toVO(r, null));
+        Condition extra = JooqHelper.keywordCondition(keyword, SYS_ROLE.ROLE_KEY, SYS_ROLE.ROLE_NAME);
+        return JooqHelper.page(dsl, SYS_ROLE, extra, offset, size, r -> toVO(r, null));
     }
 
     /**
@@ -46,9 +44,9 @@ public class RoleRepository {
      */
     public List<RoleVO> findAll() {
         return dsl.select()
-                .from(table(TABLE))
+                .from(SYS_ROLE)
                 .where(JooqHelper.notDeleted())
-                .orderBy(field("sort_order").asc())
+                .orderBy(SYS_ROLE.SORT_ORDER.asc())
                 .fetch(r -> toVO(r, null));
     }
 
@@ -56,7 +54,7 @@ public class RoleRepository {
      * 根据 ID 查询
      */
     public RoleVO findById(Long id) {
-        Record record = JooqHelper.findById(dsl, TABLE, id);
+        Record record = JooqHelper.findById(dsl, SYS_ROLE, id);
         if (record == null) {
             return null;
         }
@@ -71,8 +69,8 @@ public class RoleRepository {
     public boolean existsByRoleKey(String roleKey) {
         return dsl.fetchExists(
                 dsl.selectOne()
-                        .from(table(TABLE))
-                        .where(field("role_key").eq(roleKey))
+                        .from(SYS_ROLE)
+                        .where(SYS_ROLE.ROLE_KEY.eq(roleKey))
                         .and(JooqHelper.notDeleted())
         );
     }
@@ -85,18 +83,18 @@ public class RoleRepository {
         Long id = idGenerator.nextId();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table(TABLE))
-                .set(field("id"), id)
-                .set(field("role_key"), roleKey)
-                .set(field("role_name"), roleName)
-                .set(field("sort_order"), sortOrder != null ? sortOrder : 0)
-                .set(field("enabled"), Constants.ENABLED)
-                .set(field("remark"), remark)
-                .set(field("create_by"), operator)
-                .set(field("create_time"), now)
-                .set(field("update_by"), operator)
-                .set(field("update_time"), now)
-                .set(field("deleted"), Constants.NOT_DELETED)
+        dsl.insertInto(SYS_ROLE)
+                .set(SYS_ROLE.ID, id)
+                .set(SYS_ROLE.ROLE_KEY, roleKey)
+                .set(SYS_ROLE.ROLE_NAME, roleName)
+                .set(SYS_ROLE.SORT_ORDER, sortOrder != null ? sortOrder : 0)
+                .set(SYS_ROLE.ENABLED, Constants.ENABLED)
+                .set(SYS_ROLE.REMARK, remark)
+                .set(SYS_ROLE.CREATE_BY, operator)
+                .set(SYS_ROLE.CREATE_TIME, now)
+                .set(SYS_ROLE.UPDATE_BY, operator)
+                .set(SYS_ROLE.UPDATE_TIME, now)
+                .set(SYS_ROLE.DELETED, Constants.NOT_DELETED)
                 .execute();
 
         return id;
@@ -107,32 +105,32 @@ public class RoleRepository {
      */
     public void update(Long id, String roleName, Integer sortOrder,
                        Integer enabled, String remark, String operator) {
-        var step = dsl.update(table(TABLE))
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now());
+        var step = dsl.update(SYS_ROLE)
+                .set(SYS_ROLE.UPDATE_BY, operator)
+                .set(SYS_ROLE.UPDATE_TIME, LocalDateTime.now());
 
-        if (roleName != null) step = step.set(field("role_name"), roleName);
-        if (sortOrder != null) step = step.set(field("sort_order"), sortOrder);
-        if (enabled != null) step = step.set(field("enabled"), enabled);
-        if (remark != null) step = step.set(field("remark"), remark);
+        if (roleName != null) step = step.set(SYS_ROLE.ROLE_NAME, roleName);
+        if (sortOrder != null) step = step.set(SYS_ROLE.SORT_ORDER, sortOrder);
+        if (enabled != null) step = step.set(SYS_ROLE.ENABLED, enabled);
+        if (remark != null) step = step.set(SYS_ROLE.REMARK, remark);
 
-        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_ROLE.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     /**
      * 逻辑删除
      */
     public void softDelete(Long id, String operator) {
-        JooqHelper.softDelete(dsl, TABLE, id, operator);
+        JooqHelper.softDelete(dsl, SYS_ROLE, id, operator);
     }
 
     /**
      * 获取角色菜单ID列表
      */
     public List<Long> getMenuIds(Long roleId) {
-        return dsl.select(field("menu_id", Long.class))
-                .from(table("sys_role_menu"))
-                .where(field("role_id").eq(roleId))
+        return dsl.select(SYS_ROLE_MENU.MENU_ID)
+                .from(SYS_ROLE_MENU)
+                .where(SYS_ROLE_MENU.ROLE_ID.eq(roleId))
                 .fetchInto(Long.class);
     }
 
@@ -140,13 +138,13 @@ public class RoleRepository {
      * 保存角色菜单关联
      */
     public void saveRoleMenus(Long roleId, List<Long> menuIds) {
-        dsl.deleteFrom(table("sys_role_menu"))
-                .where(field("role_id").eq(roleId))
+        dsl.deleteFrom(SYS_ROLE_MENU)
+                .where(SYS_ROLE_MENU.ROLE_ID.eq(roleId))
                 .execute();
 
         if (menuIds != null && !menuIds.isEmpty()) {
-            var insertStep = dsl.insertInto(table("sys_role_menu"),
-                    field("role_id"), field("menu_id"));
+            var insertStep = dsl.insertInto(SYS_ROLE_MENU,
+                    SYS_ROLE_MENU.ROLE_ID, SYS_ROLE_MENU.MENU_ID);
             for (Long menuId : menuIds) {
                 insertStep = insertStep.values(roleId, menuId);
             }
@@ -155,15 +153,15 @@ public class RoleRepository {
     }
 
     private RoleVO toVO(Record r, List<Long> menuIds) {
-        Integer enabledVal = r.get("enabled", Integer.class);
+        Integer enabledVal = r.get(SYS_ROLE.ENABLED);
         return new RoleVO(
-                r.get("id", Long.class),
-                r.get("role_key", String.class),
-                r.get("role_name", String.class),
-                r.get("sort_order", Integer.class),
+                r.get(SYS_ROLE.ID),
+                r.get(SYS_ROLE.ROLE_KEY),
+                r.get(SYS_ROLE.ROLE_NAME),
+                r.get(SYS_ROLE.SORT_ORDER),
                 enabledVal != null && enabledVal == 1,
-                r.get("remark", String.class),
-                r.get("create_time", LocalDateTime.class),
+                r.get(SYS_ROLE.REMARK),
+                r.get(SYS_ROLE.CREATE_TIME),
                 menuIds != null ? menuIds : Collections.emptyList()
         );
     }

@@ -13,16 +13,13 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysJob.SYS_JOB;
 
 /**
  * 定时任务数据访问
  */
 @Repository
 public class JobRepository {
-
-    private static final String TABLE = "sys_job";
 
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
@@ -33,20 +30,20 @@ public class JobRepository {
     }
 
     public PageResult<JobVO> page(int offset, int size, String keyword) {
-        Condition extra = JooqHelper.keywordCondition(keyword, "job_name", "invoke_target");
-        return JooqHelper.page(dsl, TABLE, extra, offset, size, this::toVO);
+        Condition extra = JooqHelper.keywordCondition(keyword, SYS_JOB.JOB_NAME, SYS_JOB.INVOKE_TARGET);
+        return JooqHelper.page(dsl, SYS_JOB, extra, offset, size, this::toVO);
     }
 
     public List<JobVO> findAllEnabled() {
         return dsl.select()
-                .from(table(TABLE))
+                .from(SYS_JOB)
                 .where(JooqHelper.notDeleted())
-                .and(field("enabled").eq(Constants.ENABLED))
+                .and(SYS_JOB.ENABLED.eq(Constants.ENABLED))
                 .fetch(this::toVO);
     }
 
     public JobVO findById(Long id) {
-        Record r = JooqHelper.findById(dsl, TABLE, id);
+        Record r = JooqHelper.findById(dsl, SYS_JOB, id);
         return r != null ? toVO(r) : null;
     }
 
@@ -56,21 +53,21 @@ public class JobRepository {
         Long id = idGenerator.nextId();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table(TABLE))
-                .set(field("id"), id)
-                .set(field("job_name"), jobName)
-                .set(field("job_group"), jobGroup != null ? jobGroup : "DEFAULT")
-                .set(field("invoke_target"), invokeTarget)
-                .set(field("cron_expression"), cronExpression)
-                .set(field("misfire_policy"), misfirePolicy != null ? misfirePolicy : 1)
-                .set(field("concurrent"), concurrent != null ? concurrent : 0)
-                .set(field("enabled"), enabled != null ? enabled : Constants.ENABLED)
-                .set(field("remark"), remark)
-                .set(field("create_by"), operator)
-                .set(field("create_time"), now)
-                .set(field("update_by"), operator)
-                .set(field("update_time"), now)
-                .set(field("deleted"), Constants.NOT_DELETED)
+        dsl.insertInto(SYS_JOB)
+                .set(SYS_JOB.ID, id)
+                .set(SYS_JOB.JOB_NAME, jobName)
+                .set(SYS_JOB.JOB_GROUP, jobGroup != null ? jobGroup : "DEFAULT")
+                .set(SYS_JOB.INVOKE_TARGET, invokeTarget)
+                .set(SYS_JOB.CRON_EXPRESSION, cronExpression)
+                .set(SYS_JOB.MISFIRE_POLICY, misfirePolicy != null ? misfirePolicy : 1)
+                .set(SYS_JOB.CONCURRENT, concurrent != null ? concurrent : 0)
+                .set(SYS_JOB.ENABLED, enabled != null ? enabled : Constants.ENABLED)
+                .set(SYS_JOB.REMARK, remark)
+                .set(SYS_JOB.CREATE_BY, operator)
+                .set(SYS_JOB.CREATE_TIME, now)
+                .set(SYS_JOB.UPDATE_BY, operator)
+                .set(SYS_JOB.UPDATE_TIME, now)
+                .set(SYS_JOB.DELETED, Constants.NOT_DELETED)
                 .execute();
 
         return id;
@@ -79,39 +76,39 @@ public class JobRepository {
     public void update(Long id, String jobName, String jobGroup, String invokeTarget,
                        String cronExpression, Integer misfirePolicy, Integer concurrent,
                        Integer enabled, String remark, String operator) {
-        var step = dsl.update(table(TABLE))
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now());
+        var step = dsl.update(SYS_JOB)
+                .set(SYS_JOB.UPDATE_BY, operator)
+                .set(SYS_JOB.UPDATE_TIME, LocalDateTime.now());
 
-        if (jobName != null) step = step.set(field("job_name"), jobName);
-        if (jobGroup != null) step = step.set(field("job_group"), jobGroup);
-        if (invokeTarget != null) step = step.set(field("invoke_target"), invokeTarget);
-        if (cronExpression != null) step = step.set(field("cron_expression"), cronExpression);
-        if (misfirePolicy != null) step = step.set(field("misfire_policy"), misfirePolicy);
-        if (concurrent != null) step = step.set(field("concurrent"), concurrent);
-        if (enabled != null) step = step.set(field("enabled"), enabled);
-        if (remark != null) step = step.set(field("remark"), remark);
+        if (jobName != null) step = step.set(SYS_JOB.JOB_NAME, jobName);
+        if (jobGroup != null) step = step.set(SYS_JOB.JOB_GROUP, jobGroup);
+        if (invokeTarget != null) step = step.set(SYS_JOB.INVOKE_TARGET, invokeTarget);
+        if (cronExpression != null) step = step.set(SYS_JOB.CRON_EXPRESSION, cronExpression);
+        if (misfirePolicy != null) step = step.set(SYS_JOB.MISFIRE_POLICY, misfirePolicy);
+        if (concurrent != null) step = step.set(SYS_JOB.CONCURRENT, concurrent);
+        if (enabled != null) step = step.set(SYS_JOB.ENABLED, enabled);
+        if (remark != null) step = step.set(SYS_JOB.REMARK, remark);
 
-        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_JOB.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     public void softDelete(Long id, String operator) {
-        JooqHelper.softDelete(dsl, TABLE, id, operator);
+        JooqHelper.softDelete(dsl, SYS_JOB, id, operator);
     }
 
     private JobVO toVO(Record r) {
-        Integer enabledVal = r.get("enabled", Integer.class);
+        Integer enabledVal = r.get(SYS_JOB.ENABLED);
         return new JobVO(
-                r.get("id", Long.class),
-                r.get("job_name", String.class),
-                r.get("job_group", String.class),
-                r.get("invoke_target", String.class),
-                r.get("cron_expression", String.class),
-                r.get("misfire_policy", Integer.class),
-                r.get("concurrent", Integer.class),
+                r.get(SYS_JOB.ID),
+                r.get(SYS_JOB.JOB_NAME),
+                r.get(SYS_JOB.JOB_GROUP),
+                r.get(SYS_JOB.INVOKE_TARGET),
+                r.get(SYS_JOB.CRON_EXPRESSION),
+                r.get(SYS_JOB.MISFIRE_POLICY),
+                r.get(SYS_JOB.CONCURRENT),
                 enabledVal != null && enabledVal == 1,
-                r.get("remark", String.class),
-                r.get("create_time", LocalDateTime.class)
+                r.get(SYS_JOB.REMARK),
+                r.get(SYS_JOB.CREATE_TIME)
         );
     }
 }
