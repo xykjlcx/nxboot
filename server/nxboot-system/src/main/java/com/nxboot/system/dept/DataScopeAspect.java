@@ -15,8 +15,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static com.nxboot.generated.jooq.tables.SysRole.SYS_ROLE;
+import static com.nxboot.generated.jooq.tables.SysRoleDept.SYS_ROLE_DEPT;
+import static com.nxboot.generated.jooq.tables.SysUserRole.SYS_USER_ROLE;
 import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
 
 /**
  * 数据权限 AOP 切面。
@@ -75,12 +77,14 @@ public class DataScopeAspect {
         }
 
         // 查询当前用户所有角色的 data_scope，取最宽松的（数值最小）
-        Integer minScope = dsl.select(DSL.min(field("r.data_scope", Integer.class)))
-                .from(table("sys_user_role").as("ur"))
-                .join(table("sys_role").as("r")).on(field("ur.role_id").eq(field("r.id")))
-                .where(field("ur.user_id").eq(user.getUserId()))
-                .and(field("r.deleted").eq(Constants.NOT_DELETED))
-                .and(field("r.enabled").eq(Constants.ENABLED))
+        var ur = SYS_USER_ROLE.as("ur");
+        var r = SYS_ROLE.as("r");
+        Integer minScope = dsl.select(DSL.min(r.DATA_SCOPE))
+                .from(ur)
+                .join(r).on(ur.ROLE_ID.eq(r.ID))
+                .where(ur.USER_ID.eq(user.getUserId()))
+                .and(r.DELETED.eq(Constants.NOT_DELETED))
+                .and(r.ENABLED.eq(Constants.ENABLED))
                 .fetchOneInto(Integer.class);
 
         if (minScope == null) {
@@ -108,9 +112,9 @@ public class DataScopeAspect {
      */
     private Condition buildCustomDeptCondition(LoginUser user, String deptField) {
         // 查询用户所有角色 ID
-        List<Long> roleIds = dsl.select(field("role_id", Long.class))
-                .from(table("sys_user_role"))
-                .where(field("user_id").eq(user.getUserId()))
+        List<Long> roleIds = dsl.select(SYS_USER_ROLE.ROLE_ID)
+                .from(SYS_USER_ROLE)
+                .where(SYS_USER_ROLE.USER_ID.eq(user.getUserId()))
                 .fetchInto(Long.class);
 
         if (roleIds.isEmpty()) {
@@ -118,9 +122,9 @@ public class DataScopeAspect {
         }
 
         return field(deptField).in(
-                dsl.select(field("dept_id"))
-                        .from(table("sys_role_dept"))
-                        .where(field("role_id").in(roleIds))
+                dsl.select(SYS_ROLE_DEPT.DEPT_ID)
+                        .from(SYS_ROLE_DEPT)
+                        .where(SYS_ROLE_DEPT.ROLE_ID.in(roleIds))
         );
     }
 

@@ -20,8 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysUser.SYS_USER;
 
 /**
  * 认证服务
@@ -62,9 +61,9 @@ public class AuthService {
             String refreshToken = tokenProvider.generateRefreshToken(loginUser.getUserId(), loginUser.getUsername());
 
             // 查询昵称
-            String nickname = dsl.select(field("nickname"))
-                    .from(table("sys_user"))
-                    .where(field("id").eq(loginUser.getUserId()))
+            String nickname = dsl.select(SYS_USER.NICKNAME)
+                    .from(SYS_USER)
+                    .where(SYS_USER.ID.eq(loginUser.getUserId()))
                     .fetchOneInto(String.class);
 
             // 记录登录成功日志
@@ -96,10 +95,10 @@ public class AuthService {
         Long userId = claims.get("userId", Long.class);
 
         // 校验用户是否仍然存在且启用
-        Boolean enabled = dsl.select(field("enabled"))
-                .from(table("sys_user"))
-                .where(field("id").eq(userId))
-                .and(field("deleted").eq(false))
+        Boolean enabled = dsl.select(SYS_USER.ENABLED)
+                .from(SYS_USER)
+                .where(SYS_USER.ID.eq(userId))
+                .and(SYS_USER.DELETED.eq(0))
                 .fetchOneInto(Boolean.class);
 
         if (enabled == null || !enabled) {

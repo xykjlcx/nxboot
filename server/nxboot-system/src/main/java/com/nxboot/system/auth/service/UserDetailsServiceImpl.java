@@ -14,8 +14,11 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysMenu.SYS_MENU;
+import static com.nxboot.generated.jooq.tables.SysRole.SYS_ROLE;
+import static com.nxboot.generated.jooq.tables.SysRoleMenu.SYS_ROLE_MENU;
+import static com.nxboot.generated.jooq.tables.SysUser.SYS_USER;
+import static com.nxboot.generated.jooq.tables.SysUserRole.SYS_USER_ROLE;
 
 /**
  * 用户认证服务，实现 Spring Security UserDetailsService
@@ -33,19 +36,19 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // 查询用户
         Record userRecord = dsl.select()
-                .from(table("sys_user"))
-                .where(field("username").eq(username))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
+                .from(SYS_USER)
+                .where(SYS_USER.USERNAME.eq(username))
+                .and(SYS_USER.DELETED.eq(Constants.NOT_DELETED))
                 .fetchOne();
 
         if (userRecord == null) {
             throw new UsernameNotFoundException("用户不存在: " + username);
         }
 
-        Long userId = userRecord.get(field("id", Long.class));
-        String password = userRecord.get(field("password", String.class));
-        boolean enabled = userRecord.get(field("enabled", Integer.class)) == Constants.ENABLED;
-        Long deptId = userRecord.get(field("dept_id", Long.class));
+        Long userId = userRecord.get(SYS_USER.ID);
+        String password = userRecord.get(SYS_USER.PASSWORD);
+        boolean enabled = userRecord.get(SYS_USER.ENABLED) == Constants.ENABLED;
+        Long deptId = userRecord.get(SYS_USER.DEPT_ID);
 
         if (!enabled) {
             throw new BusinessException(ErrorCode.AUTH_ACCOUNT_DISABLED);
@@ -62,19 +65,19 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      */
     public LoginUser loadUserById(Long userId) {
         Record userRecord = dsl.select()
-                .from(table("sys_user"))
-                .where(field("id").eq(userId))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
+                .from(SYS_USER)
+                .where(SYS_USER.ID.eq(userId))
+                .and(SYS_USER.DELETED.eq(Constants.NOT_DELETED))
                 .fetchOne();
 
         if (userRecord == null) {
             return null;
         }
 
-        String username = userRecord.get(field("username", String.class));
-        String password = userRecord.get(field("password", String.class));
-        boolean enabled = userRecord.get(field("enabled", Integer.class)) == Constants.ENABLED;
-        Long deptId = userRecord.get(field("dept_id", Long.class));
+        String username = userRecord.get(SYS_USER.USERNAME);
+        String password = userRecord.get(SYS_USER.PASSWORD);
+        boolean enabled = userRecord.get(SYS_USER.ENABLED) == Constants.ENABLED;
+        Long deptId = userRecord.get(SYS_USER.DEPT_ID);
 
         Set<String> permissions = loadPermissions(userId);
 
@@ -88,13 +91,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         Set<String> permissions = new HashSet<>();
 
         // 查询用户角色
-        var roleKeys = dsl.select(field("r.role_key"))
-                .from(table("sys_user_role").as("ur"))
-                .join(table("sys_role").as("r")).on(field("ur.role_id").eq(field("r.id")))
-                .where(field("ur.user_id").eq(userId))
-                .and(field("r.deleted").eq(Constants.NOT_DELETED))
-                .and(field("r.enabled").eq(Constants.ENABLED))
-                .fetch(field("r.role_key", String.class));
+        var ur = SYS_USER_ROLE.as("ur");
+        var r = SYS_ROLE.as("r");
+        var roleKeys = dsl.select(r.ROLE_KEY)
+                .from(ur)
+                .join(r).on(ur.ROLE_ID.eq(r.ID))
+                .where(ur.USER_ID.eq(userId))
+                .and(r.DELETED.eq(Constants.NOT_DELETED))
+                .and(r.ENABLED.eq(Constants.ENABLED))
+                .fetch(r.ROLE_KEY);
 
         // admin 角色拥有所有权限
         if (roleKeys.contains(Constants.ROLE_ADMIN)) {
@@ -103,16 +108,19 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
 
         // 查询角色关联的菜单权限
-        var menuPermissions = dsl.select(field("m.permission"))
-                .from(table("sys_user_role").as("ur"))
-                .join(table("sys_role_menu").as("rm")).on(field("ur.role_id").eq(field("rm.role_id")))
-                .join(table("sys_menu").as("m")).on(field("rm.menu_id").eq(field("m.id")))
-                .where(field("ur.user_id").eq(userId))
-                .and(field("m.deleted").eq(Constants.NOT_DELETED))
-                .and(field("m.enabled").eq(Constants.ENABLED))
-                .and(field("m.permission").isNotNull())
-                .and(field("m.permission").ne(""))
-                .fetch(field("m.permission", String.class));
+        var ur2 = SYS_USER_ROLE.as("ur2");
+        var rm = SYS_ROLE_MENU.as("rm");
+        var m = SYS_MENU.as("m");
+        var menuPermissions = dsl.select(m.PERMISSION)
+                .from(ur2)
+                .join(rm).on(ur2.ROLE_ID.eq(rm.ROLE_ID))
+                .join(m).on(rm.MENU_ID.eq(m.ID))
+                .where(ur2.USER_ID.eq(userId))
+                .and(m.DELETED.eq(Constants.NOT_DELETED))
+                .and(m.ENABLED.eq(Constants.ENABLED))
+                .and(m.PERMISSION.isNotNull())
+                .and(m.PERMISSION.ne(""))
+                .fetch(m.PERMISSION);
 
         permissions.addAll(menuPermissions);
         return permissions;

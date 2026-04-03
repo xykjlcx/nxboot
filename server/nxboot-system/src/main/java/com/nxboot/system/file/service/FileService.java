@@ -23,8 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysFile.SYS_FILE;
 
 /**
  * 文件服务——通过 FileStorage 接口屏蔽存储后端差异（本地/OSS）。
@@ -76,15 +75,15 @@ public class FileService {
         String operator = SecurityUtils.getCurrentUsername();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table("sys_file"))
-                .set(field("id"), id)
-                .set(field("file_name"), fileName)
-                .set(field("original_name"), originalName)
-                .set(field("file_path"), relativePath)
-                .set(field("file_size"), file.getSize())
-                .set(field("file_type"), file.getContentType())
-                .set(field("create_by"), operator)
-                .set(field("create_time"), now)
+        dsl.insertInto(SYS_FILE)
+                .set(SYS_FILE.ID, id)
+                .set(SYS_FILE.FILE_NAME, fileName)
+                .set(SYS_FILE.ORIGINAL_NAME, originalName)
+                .set(SYS_FILE.FILE_PATH, relativePath)
+                .set(SYS_FILE.FILE_SIZE, file.getSize())
+                .set(SYS_FILE.FILE_TYPE, file.getContentType())
+                .set(SYS_FILE.CREATE_BY, operator)
+                .set(SYS_FILE.CREATE_TIME, now)
                 .execute();
 
         return new FileVO(id, fileName, originalName, relativePath,
@@ -96,14 +95,14 @@ public class FileService {
      */
     public PageResult<FileVO> page(PageQuery query) {
         long total = dsl.selectCount()
-                .from(table("sys_file"))
+                .from(SYS_FILE)
                 .fetchOneInto(Long.class);
 
         if (total == 0) return PageResult.empty();
 
         List<FileVO> list = dsl.select()
-                .from(table("sys_file"))
-                .orderBy(field("create_time").desc())
+                .from(SYS_FILE)
+                .orderBy(SYS_FILE.CREATE_TIME.desc())
                 .offset(query.offset()).limit(query.pageSize())
                 .fetch(this::toVO);
 
@@ -114,8 +113,8 @@ public class FileService {
      * 根据 ID 查询
      */
     public FileVO getById(Long id) {
-        Record r = dsl.select().from(table("sys_file"))
-                .where(field("id").eq(id))
+        Record r = dsl.select().from(SYS_FILE)
+                .where(SYS_FILE.ID.eq(id))
                 .fetchOne();
         AssertUtils.notNull(r, "文件", id);
         return toVO(r);
@@ -126,16 +125,16 @@ public class FileService {
      */
     @Transactional
     public void delete(Long id) {
-        Record r = dsl.select().from(table("sys_file"))
-                .where(field("id").eq(id))
+        Record r = dsl.select().from(SYS_FILE)
+                .where(SYS_FILE.ID.eq(id))
                 .fetchOne();
         AssertUtils.notNull(r, "文件", id);
 
-        String filePath = r.get(field("file_path", String.class));
+        String filePath = r.get(SYS_FILE.FILE_PATH);
         fileStorage.delete(filePath);
 
-        dsl.deleteFrom(table("sys_file"))
-                .where(field("id").eq(id))
+        dsl.deleteFrom(SYS_FILE)
+                .where(SYS_FILE.ID.eq(id))
                 .execute();
     }
 
@@ -161,14 +160,14 @@ public class FileService {
 
     private FileVO toVO(Record r) {
         return new FileVO(
-                r.get("id", Long.class),
-                r.get("file_name", String.class),
-                r.get("original_name", String.class),
-                r.get("file_path", String.class),
-                r.get("file_size", Long.class),
-                r.get("file_type", String.class),
-                r.get("create_by", String.class),
-                r.get("create_time", LocalDateTime.class)
+                r.get(SYS_FILE.ID),
+                r.get(SYS_FILE.FILE_NAME),
+                r.get(SYS_FILE.ORIGINAL_NAME),
+                r.get(SYS_FILE.FILE_PATH),
+                r.get(SYS_FILE.FILE_SIZE),
+                r.get(SYS_FILE.FILE_TYPE),
+                r.get(SYS_FILE.CREATE_BY),
+                r.get(SYS_FILE.CREATE_TIME)
         );
     }
 }

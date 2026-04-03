@@ -20,8 +20,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysUser.SYS_USER;
+import static com.nxboot.generated.jooq.tables.SysUserRole.SYS_USER_ROLE;
+import static com.nxboot.generated.jooq.tables.SysUserSocial.SYS_USER_SOCIAL;
 
 /**
  * OAuth2 社会化登录服务。
@@ -97,26 +98,26 @@ public class OAuth2Service {
 
         if (socialRecord != null) {
             // 已绑定 → 获取本地用户
-            userId = socialRecord.get("user_id", Long.class);
+            userId = socialRecord.get(SYS_USER_SOCIAL.USER_ID);
 
             // 校验用户是否存在且启用
             Record userRecord = dsl.select()
-                    .from(table("sys_user"))
-                    .where(field("id").eq(userId))
-                    .and(field("deleted").eq(Constants.NOT_DELETED))
+                    .from(SYS_USER)
+                    .where(SYS_USER.ID.eq(userId))
+                    .and(SYS_USER.DELETED.eq(Constants.NOT_DELETED))
                     .fetchOne();
 
             if (userRecord == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND, "关联用户已被删除");
             }
 
-            Integer enabled = userRecord.get("enabled", Integer.class);
+            Integer enabled = userRecord.get(SYS_USER.ENABLED);
             if (enabled == null || enabled != Constants.ENABLED) {
                 throw new BusinessException(ErrorCode.AUTH_ACCOUNT_DISABLED);
             }
 
-            username = userRecord.get("username", String.class);
-            nickname = userRecord.get("nickname", String.class);
+            username = userRecord.get(SYS_USER.USERNAME);
+            nickname = userRecord.get(SYS_USER.NICKNAME);
 
             // 同步三方平台最新信息
             userSocialRepository.updateUserInfo(userInfo.provider(), userInfo.providerId(), userInfo);
@@ -173,9 +174,9 @@ public class OAuth2Service {
     private boolean existsByUsername(String username) {
         return dsl.fetchExists(
                 dsl.selectOne()
-                        .from(table("sys_user"))
-                        .where(field("username").eq(username))
-                        .and(field("deleted").eq(Constants.NOT_DELETED))
+                        .from(SYS_USER)
+                        .where(SYS_USER.USERNAME.eq(username))
+                        .and(SYS_USER.DELETED.eq(Constants.NOT_DELETED))
         );
     }
 
@@ -191,25 +192,25 @@ public class OAuth2Service {
         // 生成随机密码（OAuth2 用户不需要密码登录）
         String randomPassword = passwordEncoder.encode(UUID.randomUUID().toString());
 
-        dsl.insertInto(table("sys_user"))
-                .set(field("id"), userId)
-                .set(field("username"), username)
-                .set(field("password"), randomPassword)
-                .set(field("nickname"), nickname)
-                .set(field("email"), email)
-                .set(field("avatar"), avatar)
-                .set(field("enabled"), Constants.ENABLED)
-                .set(field("create_by"), "oauth2")
-                .set(field("create_time"), now)
-                .set(field("update_by"), "oauth2")
-                .set(field("update_time"), now)
-                .set(field("deleted"), Constants.NOT_DELETED)
+        dsl.insertInto(SYS_USER)
+                .set(SYS_USER.ID, userId)
+                .set(SYS_USER.USERNAME, username)
+                .set(SYS_USER.PASSWORD, randomPassword)
+                .set(SYS_USER.NICKNAME, nickname)
+                .set(SYS_USER.EMAIL, email)
+                .set(SYS_USER.AVATAR, avatar)
+                .set(SYS_USER.ENABLED, Constants.ENABLED)
+                .set(SYS_USER.CREATE_BY, "oauth2")
+                .set(SYS_USER.CREATE_TIME, now)
+                .set(SYS_USER.UPDATE_BY, "oauth2")
+                .set(SYS_USER.UPDATE_TIME, now)
+                .set(SYS_USER.DELETED, Constants.NOT_DELETED)
                 .execute();
 
         // 分配默认角色（普通用户）
-        dsl.insertInto(table("sys_user_role"))
-                .set(field("user_id"), userId)
-                .set(field("role_id"), DEFAULT_ROLE_ID)
+        dsl.insertInto(SYS_USER_ROLE)
+                .set(SYS_USER_ROLE.USER_ID, userId)
+                .set(SYS_USER_ROLE.ROLE_ID, DEFAULT_ROLE_ID)
                 .execute();
 
         return userId;
