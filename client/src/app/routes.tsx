@@ -21,6 +21,7 @@ const JobLogList = lazy(() => import("@/features/system/job-log/pages/JobLogList
 const LoginLogList = lazy(() => import("@/features/system/login-log/pages/LoginLogList"));
 const DeptList = lazy(() => import("@/features/system/dept/pages/DeptList"));
 const OnlineUserList = lazy(() => import("@/features/system/online/pages/OnlineUserList"));
+const Monitor = lazy(() => import("@/features/system/monitor/pages/Monitor"));
 const Placeholder = lazy(() => import("@/app/Placeholder"));
 
 /** 懒加载包装组件 */
@@ -70,6 +71,7 @@ export const router = createBrowserRouter([
               { path: "login-log", element: <LazyLoad><LoginLogList /></LazyLoad>, errorElement: <RouteErrorBoundary /> },
               { path: "dept", element: <LazyLoad><DeptList /></LazyLoad>, errorElement: <RouteErrorBoundary /> },
               { path: "online", element: <LazyLoad><OnlineUserList /></LazyLoad>, errorElement: <RouteErrorBoundary /> },
+              { path: "monitor", element: <LazyLoad><Monitor /></LazyLoad>, errorElement: <RouteErrorBoundary /> },
             ],
           },
           { path: "business/*", element: <LazyLoad><Placeholder /></LazyLoad>, errorElement: <RouteErrorBoundary /> },
