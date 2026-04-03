@@ -101,58 +101,49 @@ public class MenuRepository {
 
     /**
      * 构建当前用户可分配的菜单树（含 F 类型按钮，用于角色授权）
-     * admin 返回全量，非 admin 只返回自己拥有的菜单
+     * admin 返回全量，非 admin 只返回实际生效权限对应的菜单
+     * 过滤语义与 UserDetailsServiceImpl.loadPermissions() 一致：
+     *   role.enabled + role.deleted + menu.enabled + menu.deleted
      */
     public List<MenuVO> buildAssignableMenuTree(Long userId) {
-        boolean isAdmin = dsl.fetchExists(
-                dsl.selectOne()
-                        .from(SYS_USER_ROLE)
-                        .join(SYS_ROLE).on(SYS_USER_ROLE.ROLE_ID.eq(SYS_ROLE.ID))
-                        .where(SYS_USER_ROLE.USER_ID.eq(userId))
-                        .and(SYS_ROLE.ROLE_KEY.eq(Constants.ROLE_ADMIN))
-                        .and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
-        );
-
-        List<MenuVO> menus;
-        if (isAdmin) {
-            menus = findAll();
-        } else {
-            List<Long> menuIds = dsl.selectDistinct(SYS_ROLE_MENU.MENU_ID)
-                    .from(SYS_ROLE_MENU)
-                    .join(SYS_USER_ROLE).on(SYS_ROLE_MENU.ROLE_ID.eq(SYS_USER_ROLE.ROLE_ID))
-                    .where(SYS_USER_ROLE.USER_ID.eq(userId))
-                    .fetchInto(Long.class);
-
-            if (menuIds.isEmpty()) {
-                return List.of();
-            }
-
-            menus = dsl.select()
-                    .from(SYS_MENU)
-                    .where(SYS_MENU.ID.in(menuIds))
-                    .and(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
-                    .and(SYS_MENU.ENABLED.eq(Constants.ENABLED))
-                    .orderBy(SYS_MENU.SORT_ORDER.asc())
-                    .fetch(this::toVO);
+        if (isAdmin(userId)) {
+            return buildTree(findAll(), 0L);
         }
+
+        // 非 admin：通过 enabled 角色关联的 enabled 菜单（与 loadPermissions 一致）
+        List<Long> menuIds = dsl.selectDistinct(SYS_ROLE_MENU.MENU_ID)
+                .from(SYS_ROLE_MENU)
+                .join(SYS_USER_ROLE).on(SYS_ROLE_MENU.ROLE_ID.eq(SYS_USER_ROLE.ROLE_ID))
+                .join(SYS_ROLE).on(SYS_USER_ROLE.ROLE_ID.eq(SYS_ROLE.ID))
+                .join(SYS_MENU).on(SYS_ROLE_MENU.MENU_ID.eq(SYS_MENU.ID))
+                .where(SYS_USER_ROLE.USER_ID.eq(userId))
+                .and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
+                .and(SYS_ROLE.ENABLED.eq(Constants.ENABLED))
+                .and(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
+                .and(SYS_MENU.ENABLED.eq(Constants.ENABLED))
+                .fetchInto(Long.class);
+
+        if (menuIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<MenuVO> menus = dsl.select()
+                .from(SYS_MENU)
+                .where(SYS_MENU.ID.in(menuIds))
+                .and(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
+                .and(SYS_MENU.ENABLED.eq(Constants.ENABLED))
+                .orderBy(SYS_MENU.SORT_ORDER.asc())
+                .fetch(this::toVO);
 
         return buildTree(menus, 0L);
     }
 
     /**
      * 查询当前用户可分配的菜单 ID 集合（用于后端校验授权作用域）
+     * 过滤语义与 UserDetailsServiceImpl.loadPermissions() 一致
      */
     public Set<Long> getAssignableMenuIds(Long userId) {
-        boolean isAdmin = dsl.fetchExists(
-                dsl.selectOne()
-                        .from(SYS_USER_ROLE)
-                        .join(SYS_ROLE).on(SYS_USER_ROLE.ROLE_ID.eq(SYS_ROLE.ID))
-                        .where(SYS_USER_ROLE.USER_ID.eq(userId))
-                        .and(SYS_ROLE.ROLE_KEY.eq(Constants.ROLE_ADMIN))
-                        .and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
-        );
-
-        if (isAdmin) {
+        if (isAdmin(userId)) {
             return new HashSet<>(dsl.select(SYS_MENU.ID)
                     .from(SYS_MENU)
                     .where(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
@@ -162,7 +153,13 @@ public class MenuRepository {
         return new HashSet<>(dsl.selectDistinct(SYS_ROLE_MENU.MENU_ID)
                 .from(SYS_ROLE_MENU)
                 .join(SYS_USER_ROLE).on(SYS_ROLE_MENU.ROLE_ID.eq(SYS_USER_ROLE.ROLE_ID))
+                .join(SYS_ROLE).on(SYS_USER_ROLE.ROLE_ID.eq(SYS_ROLE.ID))
+                .join(SYS_MENU).on(SYS_ROLE_MENU.MENU_ID.eq(SYS_MENU.ID))
                 .where(SYS_USER_ROLE.USER_ID.eq(userId))
+                .and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
+                .and(SYS_ROLE.ENABLED.eq(Constants.ENABLED))
+                .and(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
+                .and(SYS_MENU.ENABLED.eq(Constants.ENABLED))
                 .fetchInto(Long.class));
     }
 
@@ -278,6 +275,21 @@ public class MenuRepository {
                         buildChildren(grouped, menu.id())
                 ))
                 .toList();
+    }
+
+    /**
+     * 判断用户是否为 admin（角色必须 enabled 且未删除，与 loadPermissions 一致）
+     */
+    private boolean isAdmin(Long userId) {
+        return dsl.fetchExists(
+                dsl.selectOne()
+                        .from(SYS_USER_ROLE)
+                        .join(SYS_ROLE).on(SYS_USER_ROLE.ROLE_ID.eq(SYS_ROLE.ID))
+                        .where(SYS_USER_ROLE.USER_ID.eq(userId))
+                        .and(SYS_ROLE.ROLE_KEY.eq(Constants.ROLE_ADMIN))
+                        .and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
+                        .and(SYS_ROLE.ENABLED.eq(Constants.ENABLED))
+        );
     }
 
     private MenuVO toVO(Record r) {
