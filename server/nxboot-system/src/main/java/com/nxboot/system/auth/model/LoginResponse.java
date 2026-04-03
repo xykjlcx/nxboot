@@ -5,6 +5,7 @@ package com.nxboot.system.auth.model;
  */
 public record LoginResponse(
         String token,
+        String refreshToken,
         Long userId,
         String username,
         String nickname

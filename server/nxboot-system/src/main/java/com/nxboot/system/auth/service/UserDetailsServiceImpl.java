@@ -45,6 +45,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         Long userId = userRecord.get(field("id", Long.class));
         String password = userRecord.get(field("password", String.class));
         boolean enabled = userRecord.get(field("enabled", Integer.class)) == Constants.ENABLED;
+        Long deptId = userRecord.get(field("dept_id", Long.class));
 
         if (!enabled) {
             throw new BusinessException(ErrorCode.AUTH_ACCOUNT_DISABLED);
@@ -53,7 +54,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         // 查询权限
         Set<String> permissions = loadPermissions(userId);
 
-        return new LoginUser(userId, username, password, enabled, permissions);
+        return new LoginUser(userId, username, password, enabled, deptId, permissions);
     }
 
     /**
@@ -73,10 +74,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         String username = userRecord.get(field("username", String.class));
         String password = userRecord.get(field("password", String.class));
         boolean enabled = userRecord.get(field("enabled", Integer.class)) == Constants.ENABLED;
+        Long deptId = userRecord.get(field("dept_id", Long.class));
 
         Set<String> permissions = loadPermissions(userId);
 
-        return new LoginUser(userId, username, password, enabled, permissions);
+        return new LoginUser(userId, username, password, enabled, deptId, permissions);
     }
 
     /**
