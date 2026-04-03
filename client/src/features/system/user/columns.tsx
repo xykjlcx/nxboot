@@ -1,19 +1,20 @@
 import { Tag } from "antd";
-import type { ColDef } from "ag-grid-community";
+import dayjs from "dayjs";
+import type { NxColumn } from "@/shared/components/NxTable";
 import type { UserVO } from "./types";
 
-export const userColumns: ColDef<UserVO>[] = [
-  { field: "username", headerName: "用户名", width: 120 },
-  { field: "nickname", headerName: "昵称", width: 120 },
-  { field: "email", headerName: "邮箱", width: 180 },
-  { field: "phone", headerName: "手机号", width: 140 },
+export const userColumns: NxColumn<UserVO>[] = [
+  { field: "username", title: "用户名", width: 120 },
+  { field: "nickname", title: "昵称", width: 120 },
+  { field: "email", title: "邮箱", width: 180 },
+  { field: "phone", title: "手机号", width: 140 },
   {
     field: "enabled",
-    headerName: "状态",
+    title: "状态",
     width: 90,
-    cellRenderer: (params: { value: boolean }) => (
-      <Tag color={params.value ? "success" : "error"}>{params.value ? "正常" : "停用"}</Tag>
+    render: (value: boolean) => (
+      <Tag color={value ? "success" : "error"}>{value ? "正常" : "停用"}</Tag>
     ),
   },
-  { field: "createTime", headerName: "创建时间", width: 180 },
+  { field: "createTime", title: "创建时间", width: 170, render: (v: string) => v ? dayjs(v).format("YYYY-MM-DD HH:mm:ss") : "-" },
 ];

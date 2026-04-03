@@ -143,7 +143,7 @@ export default function DictList() {
               <List.Item
                 style={{
                   cursor: "pointer",
-                  background: selectedType === item.dictType ? "#e6f4ff" : undefined,
+                  background: selectedType === item.dictType ? "var(--color-primary-bg, #e6f4ff)" : undefined,
                   padding: "8px 12px",
                 }}
                 onClick={() => setSelectedType(item.dictType)}
@@ -236,7 +236,7 @@ export default function DictList() {
               )}
             />
           ) : (
-            <div style={{ textAlign: "center", color: "#999", padding: 48 }}>请选择左侧字典类型</div>
+            <div style={{ textAlign: "center", color: "var(--color-text-secondary)", padding: 48 }}>请选择左侧字典类型</div>
           )}
         </Card>
       </Col>

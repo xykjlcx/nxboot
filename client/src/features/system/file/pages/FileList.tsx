@@ -1,12 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Button, Input, Upload, Popconfirm, message } from "antd";
-import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
 import type { UploadProps } from "antd";
-import type { ColDef } from "ag-grid-community";
+import { UploadOutlined, DeleteOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { NxTable } from "@/shared/components/NxTable";
+import { NxTable, type NxColumn } from "@/shared/components/NxTable";
+import { NxBar } from "@/shared/components/NxBar";
 import { NxFilter } from "@/shared/components/NxFilter";
-import { NxPagination } from "@/shared/components/NxPagination";
 import { usePerm } from "@/shared/hooks/usePerm";
 import { useFiles, useDeleteFile } from "../api";
 import { fileColumns } from "../columns";
@@ -16,7 +15,7 @@ const initialFilter: FileQuery = { pageNum: 1, pageSize: 20, keyword: "" };
 
 export default function FileList() {
   const [query, setQuery] = useState<FileQuery>(initialFilter);
-  const { data: pageData, isLoading } = useFiles(query);
+  const { data: pageData, isLoading, refetch } = useFiles(query);
   const deleteFile = useDeleteFile();
   const { has } = usePerm();
   const qc = useQueryClient();
@@ -43,33 +42,26 @@ export default function FileList() {
     },
   };
 
-  const actionColumn: ColDef<FileVO> = useMemo(
-    () => ({
-      headerName: "操作",
-      width: 100,
-      pinned: "right",
-      sortable: false,
-      resizable: false,
-      cellRenderer: (params: { data: FileVO | undefined }) => {
-        const record = params.data;
-        if (!record) return null;
-        if (!has("system:file:delete")) return null;
-        return (
-          <Popconfirm title="确认删除?" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
-        );
-      },
-    }),
-    [],
-  );
+  const actionColumn: NxColumn<FileVO> = {
+    field: "_action",
+    title: "操作",
+    width: 100,
+    render: (_, record) => {
+      if (!has("system:file:delete")) return null;
+      return (
+        <Popconfirm title="确认删除?" onConfirm={() => handleDelete(record.id)}>
+          <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+            删除
+          </Button>
+        </Popconfirm>
+      );
+    },
+  };
 
-  const columns = useMemo(() => [...fileColumns, actionColumn], [actionColumn]);
+  const columns: NxColumn<FileVO>[] = [...fileColumns, actionColumn];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <>
       <NxFilter initialValues={initialFilter} onSearch={(v) => setQuery({ ...v, pageNum: 1 })}>
         {(values, onChange) => (
           <Input
@@ -82,30 +74,28 @@ export default function FileList() {
         )}
       </NxFilter>
 
-      <div style={{ marginBottom: 12 }}>
-        {has("system:file:create") && (
-          <Upload {...uploadProps}>
-            <Button icon={<UploadOutlined />} type="primary">
-              上传文件
-            </Button>
-          </Upload>
-        )}
-      </div>
+      <NxBar
+        left={
+          has("system:file:create") && (
+            <Upload {...uploadProps}>
+              <Button icon={<UploadOutlined />} type="primary">上传文件</Button>
+            </Upload>
+          )
+        }
+        right={<Button icon={<ReloadOutlined />} onClick={() => refetch()}>刷新</Button>}
+      />
 
       <NxTable<FileVO>
-        storageKey="system-file"
-        columnDefs={columns}
-        rowData={pageData?.list ?? []}
+        columns={columns}
+        data={pageData?.list ?? []}
         loading={isLoading}
-        getRowId={(params) => params.data.id}
+        pagination={{
+          current: query.pageNum,
+          pageSize: query.pageSize,
+          total: pageData?.total ?? 0,
+          onChange: (pageNum, pageSize) => setQuery((prev) => ({ ...prev, pageNum, pageSize })),
+        }}
       />
-
-      <NxPagination
-        current={query.pageNum ?? 1}
-        pageSize={query.pageSize ?? 20}
-        total={pageData?.total ?? 0}
-        onChange={(pageNum, pageSize) => setQuery((prev) => ({ ...prev, pageNum, pageSize }))}
-      />
-    </div>
+    </>
   );
 }

@@ -69,17 +69,32 @@ export function UserForm() {
         <Input placeholder="请输入用户名" disabled={isEdit} />
       </Form.Item>
       {!isEdit && (
-        <Form.Item name="password" label="密码" rules={[{ required: true, message: "请输入密码" }]}>
+        <Form.Item
+          name="password"
+          label="密码"
+          rules={[
+            { required: true, message: "请输入密码" },
+            { min: 6, message: "密码至少 6 位" },
+          ]}
+        >
           <Input.Password placeholder="请输入密码" />
         </Form.Item>
       )}
       <Form.Item name="nickname" label="昵称">
         <Input placeholder="请输入昵称" />
       </Form.Item>
-      <Form.Item name="email" label="邮箱">
+      <Form.Item
+        name="email"
+        label="邮箱"
+        rules={[{ type: "email", message: "请输入有效的邮箱地址" }]}
+      >
         <Input placeholder="请输入邮箱" />
       </Form.Item>
-      <Form.Item name="phone" label="手机号">
+      <Form.Item
+        name="phone"
+        label="手机号"
+        rules={[{ pattern: /^1[3-9]\d{9}$/, message: "请输入有效的手机号" }]}
+      >
         <Input placeholder="请输入手机号" />
       </Form.Item>
       <Form.Item name="remark" label="备注">
