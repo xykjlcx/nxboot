@@ -34,6 +34,16 @@ public class MenuController {
     }
 
     /**
+     * 当前用户可分配的菜单树（含按钮，用于角色授权表单）
+     * 非 admin 用户只能看到自己拥有的菜单
+     */
+    @GetMapping("/assignable")
+    @PreAuthorize("@perm.has('system:role:list')")
+    public R<List<MenuVO>> assignableTree() {
+        return R.ok(menuService.assignableTree());
+    }
+
+    /**
      * 查询所有菜单（平铺列表）
      */
     @GetMapping

@@ -39,6 +39,15 @@ public class MenuService {
     }
 
     /**
+     * 当前用户可分配的菜单树（含按钮，用于角色授权表单）
+     * admin 看全量，非 admin 只看自己拥有的菜单
+     */
+    public List<MenuVO> assignableTree() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return menuRepository.buildAssignableMenuTree(userId);
+    }
+
+    /**
      * 查询所有菜单（平铺）
      */
     public List<MenuVO> listAll() {

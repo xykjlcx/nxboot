@@ -9,9 +9,7 @@ import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.nxboot.generated.jooq.tables.SysMenu.SYS_MENU;
@@ -99,6 +97,83 @@ public class MenuRepository {
         }
 
         return buildTree(menus, 0L);
+    }
+
+    /**
+     * 构建当前用户可分配的菜单树（含 F 类型按钮，用于角色授权）
+     * admin 返回全量，非 admin 只返回自己拥有的菜单
+     */
+    public List<MenuVO> buildAssignableMenuTree(Long userId) {
+        boolean isAdmin = dsl.fetchExists(
+                dsl.selectOne()
+                        .from(SYS_USER_ROLE)
+                        .join(SYS_ROLE).on(SYS_USER_ROLE.ROLE_ID.eq(SYS_ROLE.ID))
+                        .where(SYS_USER_ROLE.USER_ID.eq(userId))
+                        .and(SYS_ROLE.ROLE_KEY.eq(Constants.ROLE_ADMIN))
+                        .and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
+        );
+
+        List<MenuVO> menus;
+        if (isAdmin) {
+            menus = findAll();
+        } else {
+            List<Long> menuIds = dsl.selectDistinct(SYS_ROLE_MENU.MENU_ID)
+                    .from(SYS_ROLE_MENU)
+                    .join(SYS_USER_ROLE).on(SYS_ROLE_MENU.ROLE_ID.eq(SYS_USER_ROLE.ROLE_ID))
+                    .where(SYS_USER_ROLE.USER_ID.eq(userId))
+                    .fetchInto(Long.class);
+
+            if (menuIds.isEmpty()) {
+                return List.of();
+            }
+
+            menus = dsl.select()
+                    .from(SYS_MENU)
+                    .where(SYS_MENU.ID.in(menuIds))
+                    .and(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
+                    .and(SYS_MENU.ENABLED.eq(Constants.ENABLED))
+                    .orderBy(SYS_MENU.SORT_ORDER.asc())
+                    .fetch(this::toVO);
+        }
+
+        return buildTree(menus, 0L);
+    }
+
+    /**
+     * 查询当前用户可分配的菜单 ID 集合（用于后端校验授权作用域）
+     */
+    public Set<Long> getAssignableMenuIds(Long userId) {
+        boolean isAdmin = dsl.fetchExists(
+                dsl.selectOne()
+                        .from(SYS_USER_ROLE)
+                        .join(SYS_ROLE).on(SYS_USER_ROLE.ROLE_ID.eq(SYS_ROLE.ID))
+                        .where(SYS_USER_ROLE.USER_ID.eq(userId))
+                        .and(SYS_ROLE.ROLE_KEY.eq(Constants.ROLE_ADMIN))
+                        .and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
+        );
+
+        if (isAdmin) {
+            return new HashSet<>(dsl.select(SYS_MENU.ID)
+                    .from(SYS_MENU)
+                    .where(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
+                    .fetchInto(Long.class));
+        }
+
+        return new HashSet<>(dsl.selectDistinct(SYS_ROLE_MENU.MENU_ID)
+                .from(SYS_ROLE_MENU)
+                .join(SYS_USER_ROLE).on(SYS_ROLE_MENU.ROLE_ID.eq(SYS_USER_ROLE.ROLE_ID))
+                .where(SYS_USER_ROLE.USER_ID.eq(userId))
+                .fetchInto(Long.class));
+    }
+
+    /**
+     * 查询所有菜单的 id → parentId 映射（用于祖先补齐计算）
+     */
+    public Map<Long, Long> getParentIdMap() {
+        return dsl.select(SYS_MENU.ID, SYS_MENU.PARENT_ID)
+                .from(SYS_MENU)
+                .where(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
+                .fetchMap(SYS_MENU.ID, SYS_MENU.PARENT_ID);
     }
 
     /**
