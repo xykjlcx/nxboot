@@ -22,28 +22,20 @@ function toTreeData(menus: MenuVO[]): MenuTreeNode[] {
   }));
 }
 
-/** 收集树中所有叶子节点 key（用于 checkedKeys 回显，排除自动勾选的父节点） */
-function collectLeafKeys(menus: MenuVO[], checkedSet: Set<string>): string[] {
-  const result: string[] = [];
-  for (const m of menus) {
-    const hasChildren = m.children && m.children.length > 0;
-    if (hasChildren) {
-      result.push(...collectLeafKeys(m.children!, checkedSet));
-    } else if (checkedSet.has(String(m.id))) {
-      result.push(String(m.id));
-    }
-  }
-  return result;
-}
-
-/** 角色新增/编辑表单（含菜单权限树选择） */
+/**
+ * 角色新增/编辑表单（含菜单权限树选择）
+ *
+ * 使用 checkStrictly 模式保证编辑保真：
+ * - 回显时精确还原角色真实持有的 menuIds，不做叶子过滤
+ * - 保存时提交用户实际勾选的 menuIds，后端自动补齐祖先节点
+ * - 避免"只有 C 页面权限没有 F 按钮权限"的角色被误显示为空授权
+ */
 export function RoleForm() {
   const { data, hide } = NxDrawer.useContext<RoleVO | null>();
   const [form] = Form.useForm();
   const createRole = useCreateRole();
   const updateRole = useUpdateRole();
   const [checkedKeys, setCheckedKeys] = useState<string[]>([]);
-  const [halfCheckedKeys, setHalfCheckedKeys] = useState<string[]>([]);
 
   const isEdit = !!data?.id;
 
@@ -62,22 +54,15 @@ export function RoleForm() {
         enabled: data.enabled,
         remark: data.remark,
       });
-      // Tree 非 checkStrictly 模式下，checkedKeys 只设叶子节点
-      // 父节点会根据子节点选中状态自动半选/全选
-      const checkedSet = new Set((data.menuIds ?? []).map(String));
-      setCheckedKeys(collectLeafKeys(menuTree, checkedSet));
-      setHalfCheckedKeys([]);
+      // checkStrictly 模式：直接回显角色真实持有的全部 menuIds
+      setCheckedKeys((data.menuIds ?? []).map(String));
     } else {
       form.resetFields();
       setCheckedKeys([]);
-      setHalfCheckedKeys([]);
     }
-  }, [data, form, menuTree]);
+  }, [data, form]);
 
   const handleSubmit = async (values: Record<string, unknown>) => {
-    // 提交时合并 checkedKeys（叶子）+ halfCheckedKeys（半选父节点）= 完整选中列表
-    const allSelectedIds = [...checkedKeys, ...halfCheckedKeys];
-
     try {
       if (isEdit) {
         const payload: RoleCommand.Update = {
@@ -86,7 +71,7 @@ export function RoleForm() {
           sortOrder: values.sortOrder as number,
           enabled: values.enabled as boolean,
           remark: values.remark as string,
-          menuIds: allSelectedIds,
+          menuIds: checkedKeys,
         };
         await updateRole.mutateAsync(payload);
         message.success("更新成功");
@@ -96,7 +81,7 @@ export function RoleForm() {
           roleName: values.roleName as string,
           sortOrder: values.sortOrder as number,
           remark: values.remark as string,
-          menuIds: allSelectedIds,
+          menuIds: checkedKeys,
         };
         await createRole.mutateAsync(payload);
         message.success("创建成功");
@@ -129,12 +114,14 @@ export function RoleForm() {
       <Form.Item label="菜单权限">
         <Tree
           checkable
+          checkStrictly
           treeData={treeData}
           checkedKeys={checkedKeys}
-          onCheck={(checked, info) => {
+          onCheck={(checked) => {
             if (Array.isArray(checked)) {
               setCheckedKeys(checked as string[]);
-              setHalfCheckedKeys(info.halfCheckedKeys as string[] ?? []);
+            } else {
+              setCheckedKeys(checked.checked as string[]);
             }
           }}
           style={{ maxHeight: 300, overflow: "auto" }}
