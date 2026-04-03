@@ -9,10 +9,18 @@
 |---------|--------|
 | 新增 CRUD 模块 | CLAUDE.md → "新增 CRUD 模块的标准流程" |
 | 理解项目架构 | CLAUDE.md → "架构概览" + "项目结构" |
+| 按红蓝演练流程交卷 | `REVIEW_PROTOCOL.md` + `REVIEW_SUBMISSION_TEMPLATE.md` |
 | 修改表格/列表页 | `client/src/features/system/user/` 参考实现 |
 | 修改布局/导航 | `client/src/app/layouts/BasicLayout.tsx` |
 | 添加 API 接口 | 后端 Controller → Service → Repository，前端 `api.ts` |
 | 修改权限 | 后端 `@PreAuthorize`，前端 `usePerm().has()` |
+
+## 红蓝演练
+
+- **蓝队实现**：先完成最小可审查变更，再提交证据
+- **红队验收**：Codex 按产品级标准做最终把关，不只检查代码
+- **交卷要求**：从切换点之后的新提交开始，按 `REVIEW_PROTOCOL.md` 生成 submission，并标记 `READY_FOR_REVIEW`
+- **切换方式**：如果当前任务已在旧流程中进行，允许本轮按旧流程收尾，下一次原子提交开始切换
 
 ## 项目约定（Agent 必读）
 
