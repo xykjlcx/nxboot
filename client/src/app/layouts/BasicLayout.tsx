@@ -8,6 +8,7 @@ import * as Icons from "@ant-design/icons";
 import { useAuth, type MenuVO } from "@/shared/hooks/useAuth";
 import { useTheme } from "@/shared/hooks/useTheme";
 import { usePreferences } from "@/shared/stores/preferences";
+import { resolveMenuPath } from "@/shared/utils/menu";
 import styles from "./BasicLayout.module.css";
 
 const { Header, Sider, Content } = Layout;
@@ -72,42 +73,43 @@ function menusToSubsystems(menus: MenuVO[]): SubsystemConfig[] {
   return menus
     .filter((m) => m.menuType === "M")
     .map((sub) => {
+      const subPath = sub.path || `/${sub.id}`;
       const children = sub.children ?? [];
+
+      // 将菜单项 path 规范化为绝对路径（兼容历史相对 path + 新绝对 path）
+      const resolveChild = (item: MenuVO, parent: string) => ({
+        key: resolveMenuPath(item.path || "", parent),
+        icon: getIcon(item.icon),
+        label: item.menuName,
+      });
+
       // 子级中的目录节点 → 模块
       const modules: ModuleConfig[] = children
         .filter((c) => c.menuType === "M")
         .map((mod) => ({
-          key: mod.path || mod.id.toString(),
+          key: resolveMenuPath(mod.path || mod.id.toString(), subPath),
           label: mod.menuName,
           menus:
             mod.children
               ?.filter((item) => item.menuType === "C")
-              .map((item) => ({
-                key: item.path || "",
-                icon: getIcon(item.icon),
-                label: item.menuName,
-              })) ?? [],
+              .map((item) => resolveChild(item, subPath)) ?? [],
         }));
 
       // 扁平结构：子系统直接包含菜单项，无中间模块层
       if (modules.length === 0) {
         const directMenus = children
           .filter((c) => c.menuType === "C")
-          .map((item) => ({
-            key: item.path || "",
-            icon: getIcon(item.icon),
-            label: item.menuName,
-          }));
+          .map((item) => resolveChild(item, subPath));
         return {
-          key: sub.path || sub.id.toString(),
+          key: subPath,
           label: sub.menuName,
           icon: getIcon(sub.icon),
-          modules: [{ key: `${sub.path || sub.id}-default`, label: sub.menuName, menus: directMenus }],
+          modules: [{ key: `${subPath}-default`, label: sub.menuName, menus: directMenus }],
         };
       }
 
       return {
-        key: sub.path || sub.id.toString(),
+        key: subPath,
         label: sub.menuName,
         icon: getIcon(sub.icon),
         modules,
@@ -132,11 +134,10 @@ export function BasicLayout() {
   // 将后端菜单树转换为前端导航配置
   const subsystems = useMemo(() => menusToSubsystems(backendMenus), [backendMenus]);
 
-  // 当前子系统
+  // 当前子系统（按路径前缀匹配）
   const activeSubsystem = useMemo(() => {
     if (subsystems.length === 0) return null;
-    const seg = location.pathname.split("/")[1];
-    return subsystems.find((s) => s.key === seg) ?? subsystems[0]!;
+    return subsystems.find((s) => location.pathname.startsWith(s.key)) ?? subsystems[0]!;
   }, [location.pathname, subsystems]) as SubsystemConfig;
 
   // 当前模块

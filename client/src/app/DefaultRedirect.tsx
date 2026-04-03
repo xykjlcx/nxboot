@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { Result, Button } from "antd";
 import { useAuth } from "@/shared/hooks/useAuth";
+import { resolveMenuPath } from "@/shared/utils/menu";
 
 /**
  * 根据用户实际菜单权限动态选择落地页。
@@ -12,19 +13,14 @@ export function DefaultRedirect() {
 
   // 从菜单树中找到第一个 C 类型菜单
   for (const sub of menus) {
+    const subPath = sub.path || `/${sub.id}`;
     for (const child of sub.children ?? []) {
       if (child.menuType === "C" && child.path) {
-        const target = child.path.startsWith("/")
-          ? child.path
-          : `${sub.path}/${child.path}`;
-        return <Navigate to={target} replace />;
+        return <Navigate to={resolveMenuPath(child.path, subPath)} replace />;
       }
       for (const grandchild of child.children ?? []) {
         if (grandchild.menuType === "C" && grandchild.path) {
-          const target = grandchild.path.startsWith("/")
-            ? grandchild.path
-            : `${sub.path}/${child.path}/${grandchild.path}`;
-          return <Navigate to={target} replace />;
+          return <Navigate to={resolveMenuPath(grandchild.path, subPath)} replace />;
         }
       }
     }

@@ -1,10 +1,23 @@
-import { Row, Col, Card, Progress, Descriptions, Spin } from "antd";
+import { Row, Col, Card, Progress, Descriptions, Spin, Result, Button } from "antd";
 import { useMonitorServer } from "../api";
 
 function Monitor() {
-  const { data, isLoading } = useMonitorServer();
+  const { data, isLoading, isError, error, refetch } = useMonitorServer();
 
-  if (isLoading || !data) return <Spin tip="加载中..." style={{ display: "block", marginTop: 100 }} />;
+  if (isLoading) return <Spin tip="加载中..." style={{ display: "block", marginTop: 100 }} />;
+
+  if (isError) {
+    return (
+      <Result
+        status="error"
+        title="加载失败"
+        subTitle={error instanceof Error ? error.message : "获取服务器监控数据失败，请检查网络或权限。"}
+        extra={<Button type="primary" onClick={() => refetch()}>重试</Button>}
+      />
+    );
+  }
+
+  if (!data) return <Result status="warning" title="暂无数据" />;
 
   const { cpu, memory, jvm, disk } = data;
   const usageColor = (v: number) => (v > 90 ? "#ff4d4f" : v > 70 ? "#faad14" : "#52c41a");
