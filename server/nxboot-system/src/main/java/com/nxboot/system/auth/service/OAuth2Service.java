@@ -179,8 +179,11 @@ public class OAuth2Service {
         );
     }
 
+    /** 默认角色 ID：普通用户（role_key = 'user'） */
+    private static final long DEFAULT_ROLE_ID = 2L;
+
     /**
-     * 创建本地用户（OAuth2 自动注册，密码为随机值不可登录）
+     * 创建本地用户（OAuth2 自动注册，密码为随机值不可登录）+ 分配默认角色
      */
     private Long createLocalUser(String username, String nickname, String email, String avatar) {
         Long userId = idGenerator.nextId();
@@ -201,6 +204,12 @@ public class OAuth2Service {
                 .set(field("update_by"), "oauth2")
                 .set(field("update_time"), now)
                 .set(field("deleted"), Constants.NOT_DELETED)
+                .execute();
+
+        // 分配默认角色（普通用户）
+        dsl.insertInto(table("sys_user_role"))
+                .set(field("user_id"), userId)
+                .set(field("role_id"), DEFAULT_ROLE_ID)
                 .execute();
 
         return userId;
