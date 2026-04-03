@@ -45,7 +45,7 @@ public class RoleRepository {
     public List<RoleVO> findAll() {
         return dsl.select()
                 .from(SYS_ROLE)
-                .where(JooqHelper.notDeleted())
+                .where(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
                 .orderBy(SYS_ROLE.SORT_ORDER.asc())
                 .fetch(r -> toVO(r, null));
     }
@@ -71,7 +71,7 @@ public class RoleRepository {
                 dsl.selectOne()
                         .from(SYS_ROLE)
                         .where(SYS_ROLE.ROLE_KEY.eq(roleKey))
-                        .and(JooqHelper.notDeleted())
+                        .and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED))
         );
     }
 
@@ -114,7 +114,7 @@ public class RoleRepository {
         if (enabled != null) step = step.set(SYS_ROLE.ENABLED, enabled);
         if (remark != null) step = step.set(SYS_ROLE.REMARK, remark);
 
-        step.where(SYS_ROLE.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_ROLE.ID.eq(id)).and(SYS_ROLE.DELETED.eq(Constants.NOT_DELETED)).execute();
     }
 
     /**

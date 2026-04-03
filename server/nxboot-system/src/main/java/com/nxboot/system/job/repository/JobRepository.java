@@ -37,7 +37,7 @@ public class JobRepository {
     public List<JobVO> findAllEnabled() {
         return dsl.select()
                 .from(SYS_JOB)
-                .where(JooqHelper.notDeleted())
+                .where(SYS_JOB.DELETED.eq(Constants.NOT_DELETED))
                 .and(SYS_JOB.ENABLED.eq(Constants.ENABLED))
                 .fetch(this::toVO);
     }
@@ -89,7 +89,7 @@ public class JobRepository {
         if (enabled != null) step = step.set(SYS_JOB.ENABLED, enabled);
         if (remark != null) step = step.set(SYS_JOB.REMARK, remark);
 
-        step.where(SYS_JOB.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_JOB.ID.eq(id)).and(SYS_JOB.DELETED.eq(Constants.NOT_DELETED)).execute();
     }
 
     public void softDelete(Long id, String operator) {

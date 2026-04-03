@@ -36,7 +36,7 @@ public class DeptRepository {
     public List<DeptVO> findAll() {
         return dsl.select()
                 .from(SYS_DEPT)
-                .where(JooqHelper.notDeleted())
+                .where(SYS_DEPT.DELETED.eq(Constants.NOT_DELETED))
                 .orderBy(SYS_DEPT.SORT_ORDER.asc())
                 .fetch(this::toVO);
     }
@@ -71,7 +71,7 @@ public class DeptRepository {
                 .set(SYS_DEPT.EMAIL, email)
                 .set(SYS_DEPT.ENABLED, Constants.ENABLED);
 
-        Long id = JooqHelper.setAuditInsert(step, idGenerator, operator);
+        Long id = JooqHelper.setAuditInsert(step, SYS_DEPT, idGenerator, operator);
         step.execute();
         return id;
     }
@@ -94,7 +94,7 @@ public class DeptRepository {
         if (email != null) step = step.set(SYS_DEPT.EMAIL, email);
         if (enabled != null) step = step.set(SYS_DEPT.ENABLED, enabled ? Constants.ENABLED : Constants.DISABLED);
 
-        step.where(SYS_DEPT.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_DEPT.ID.eq(id)).and(SYS_DEPT.DELETED.eq(Constants.NOT_DELETED)).execute();
     }
 
     /**
@@ -112,7 +112,7 @@ public class DeptRepository {
                 dsl.selectOne()
                         .from(SYS_DEPT)
                         .where(SYS_DEPT.PARENT_ID.eq(parentId))
-                        .and(JooqHelper.notDeleted())
+                        .and(SYS_DEPT.DELETED.eq(Constants.NOT_DELETED))
         );
     }
 

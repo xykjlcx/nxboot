@@ -65,7 +65,7 @@ public class UserRepository {
                 dsl.selectOne()
                         .from(SYS_USER)
                         .where(SYS_USER.USERNAME.eq(username))
-                        .and(JooqHelper.notDeleted())
+                        .and(SYS_USER.DELETED.eq(Constants.NOT_DELETED))
         );
     }
 
@@ -112,7 +112,7 @@ public class UserRepository {
         if (enabled != null) step = step.set(SYS_USER.ENABLED, enabled);
         if (remark != null) step = step.set(SYS_USER.REMARK, remark);
 
-        step.where(SYS_USER.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_USER.ID.eq(id)).and(SYS_USER.DELETED.eq(Constants.NOT_DELETED)).execute();
     }
 
     /**

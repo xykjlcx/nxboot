@@ -47,7 +47,7 @@ public class DictRepository {
         return dsl.fetchExists(
                 dsl.selectOne().from(SYS_DICT_TYPE)
                         .where(SYS_DICT_TYPE.DICT_TYPE.eq(dictType))
-                        .and(JooqHelper.notDeleted())
+                        .and(SYS_DICT_TYPE.DELETED.eq(Constants.NOT_DELETED))
         );
     }
 
@@ -81,7 +81,7 @@ public class DictRepository {
         if (enabled != null) step = step.set(SYS_DICT_TYPE.ENABLED, enabled);
         if (remark != null) step = step.set(SYS_DICT_TYPE.REMARK, remark);
 
-        step.where(SYS_DICT_TYPE.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_DICT_TYPE.ID.eq(id)).and(SYS_DICT_TYPE.DELETED.eq(Constants.NOT_DELETED)).execute();
     }
 
     public void softDeleteType(Long id, String operator) {
@@ -93,7 +93,7 @@ public class DictRepository {
     public List<DictDataVO> findDataByType(String dictType) {
         return dsl.select().from(SYS_DICT_DATA)
                 .where(SYS_DICT_DATA.DICT_TYPE.eq(dictType))
-                .and(JooqHelper.notDeleted())
+                .and(SYS_DICT_DATA.DELETED.eq(Constants.NOT_DELETED))
                 .orderBy(SYS_DICT_DATA.SORT_ORDER.asc())
                 .fetch(this::toDataVO);
     }
@@ -138,7 +138,7 @@ public class DictRepository {
         if (enabled != null) step = step.set(SYS_DICT_DATA.ENABLED, enabled);
         if (remark != null) step = step.set(SYS_DICT_DATA.REMARK, remark);
 
-        step.where(SYS_DICT_DATA.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_DICT_DATA.ID.eq(id)).and(SYS_DICT_DATA.DELETED.eq(Constants.NOT_DELETED)).execute();
     }
 
     public void softDeleteData(Long id, String operator) {

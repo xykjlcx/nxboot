@@ -39,7 +39,7 @@ public class MenuRepository {
     public List<MenuVO> findAll() {
         return dsl.select()
                 .from(SYS_MENU)
-                .where(JooqHelper.notDeleted())
+                .where(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
                 .orderBy(SYS_MENU.SORT_ORDER.asc())
                 .fetch(r -> toVO(r));
     }
@@ -71,7 +71,7 @@ public class MenuRepository {
             // 管理员：返回所有目录和菜单（排除按钮）
             menus = dsl.select()
                     .from(SYS_MENU)
-                    .where(JooqHelper.notDeleted())
+                    .where(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
                     .and(SYS_MENU.MENU_TYPE.ne("F"))
                     .and(SYS_MENU.ENABLED.eq(Constants.ENABLED))
                     .orderBy(SYS_MENU.SORT_ORDER.asc())
@@ -91,7 +91,7 @@ public class MenuRepository {
             menus = dsl.select()
                     .from(SYS_MENU)
                     .where(SYS_MENU.ID.in(menuIds))
-                    .and(JooqHelper.notDeleted())
+                    .and(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
                     .and(SYS_MENU.MENU_TYPE.ne("F"))
                     .and(SYS_MENU.ENABLED.eq(Constants.ENABLED))
                     .orderBy(SYS_MENU.SORT_ORDER.asc())
@@ -161,7 +161,7 @@ public class MenuRepository {
         if (visible != null) step = step.set(SYS_MENU.VISIBLE, visible);
         if (enabled != null) step = step.set(SYS_MENU.ENABLED, enabled);
 
-        step.where(SYS_MENU.ID.eq(id)).and(JooqHelper.notDeleted()).execute();
+        step.where(SYS_MENU.ID.eq(id)).and(SYS_MENU.DELETED.eq(Constants.NOT_DELETED)).execute();
     }
 
     /**
@@ -179,7 +179,7 @@ public class MenuRepository {
                 dsl.selectOne()
                         .from(SYS_MENU)
                         .where(SYS_MENU.PARENT_ID.eq(parentId))
-                        .and(JooqHelper.notDeleted())
+                        .and(SYS_MENU.DELETED.eq(Constants.NOT_DELETED))
         );
     }
 
