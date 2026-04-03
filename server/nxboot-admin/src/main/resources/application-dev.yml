@@ -5,8 +5,8 @@ spring:
       port: 6379
   datasource:
     url: jdbc:postgresql://localhost:5432/nxboot
-    username: ocean
-    password:
+    username: postgres
+    password: postgres
   jooq:
     sql-dialect: postgres
 
