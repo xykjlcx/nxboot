@@ -8,6 +8,8 @@ import com.nxboot.framework.security.SecurityUtils;
 import com.nxboot.system.config.model.ConfigCommand;
 import com.nxboot.system.config.model.ConfigVO;
 import com.nxboot.system.config.repository.ConfigRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,12 +35,14 @@ public class ConfigService {
         return config;
     }
 
+    @Cacheable(value = "system:config", key = "#configKey")
     public ConfigVO getByKey(String configKey) {
         ConfigVO config = configRepository.findByKey(configKey);
         AssertUtils.notNull(config, "配置", configKey);
         return config;
     }
 
+    @CacheEvict(value = "system:config", allEntries = true)
     @Transactional
     public Long create(ConfigCommand.Create cmd) {
         AssertUtils.isTrue(!configRepository.existsByKey(cmd.configKey()),
@@ -48,6 +52,7 @@ public class ConfigService {
                 cmd.configName(), cmd.remark(), operator);
     }
 
+    @CacheEvict(value = "system:config", allEntries = true)
     @Transactional
     public void update(Long id, ConfigCommand.Update cmd) {
         AssertUtils.notNull(configRepository.findById(id), "配置", id);
@@ -55,6 +60,7 @@ public class ConfigService {
         configRepository.update(id, cmd.configValue(), cmd.configName(), cmd.remark(), operator);
     }
 
+    @CacheEvict(value = "system:config", allEntries = true)
     @Transactional
     public void delete(Long id) {
         AssertUtils.notNull(configRepository.findById(id), "配置", id);

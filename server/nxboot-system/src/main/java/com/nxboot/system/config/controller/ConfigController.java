@@ -1,5 +1,6 @@
 package com.nxboot.system.config.controller;
 
+import com.nxboot.common.annotation.Log;
 import com.nxboot.common.base.PageQuery;
 import com.nxboot.common.base.PageResult;
 import com.nxboot.common.result.R;
@@ -44,12 +45,14 @@ public class ConfigController {
         return R.ok(configService.getByKey(configKey));
     }
 
+    @Log(module = "系统配置", operation = "新增配置")
     @PostMapping
     @PreAuthorize("@perm.has('system:config:create')")
     public R<Long> create(@Valid @RequestBody ConfigCommand.Create cmd) {
         return R.ok(configService.create(cmd));
     }
 
+    @Log(module = "系统配置", operation = "修改配置")
     @PutMapping("/{id}")
     @PreAuthorize("@perm.has('system:config:update')")
     public R<Void> update(@PathVariable Long id, @Valid @RequestBody ConfigCommand.Update cmd) {
@@ -57,6 +60,7 @@ public class ConfigController {
         return R.ok();
     }
 
+    @Log(module = "系统配置", operation = "删除配置")
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.has('system:config:delete')")
     public R<Void> delete(@PathVariable Long id) {
