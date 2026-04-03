@@ -12,16 +12,13 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysJobLog.SYS_JOB_LOG;
 
 /**
  * 定时任务执行日志数据访问
  */
 @Repository
 public class JobLogRepository {
-
-    private static final String TABLE = "sys_job_log";
 
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
@@ -45,25 +42,25 @@ public class JobLogRepository {
 
         // 按任务 ID 过滤
         if (jobId != null) {
-            condition = condition.and(field("job_id").eq(jobId));
+            condition = condition.and(SYS_JOB_LOG.JOB_ID.eq(jobId));
         }
 
         // 按执行状态过滤
         if (status != null) {
-            condition = condition.and(field("status").eq(status));
+            condition = condition.and(SYS_JOB_LOG.STATUS.eq(status));
         }
 
         // 关键词模糊搜索
         if (keyword != null && !keyword.isBlank()) {
             String pattern = "%" + keyword + "%";
             condition = condition.and(
-                    field("job_name").likeIgnoreCase(pattern)
-                            .or(field("invoke_target").likeIgnoreCase(pattern))
+                    SYS_JOB_LOG.JOB_NAME.likeIgnoreCase(pattern)
+                            .or(SYS_JOB_LOG.INVOKE_TARGET.likeIgnoreCase(pattern))
             );
         }
 
         long total = dsl.selectCount()
-                .from(table(TABLE))
+                .from(SYS_JOB_LOG)
                 .where(condition)
                 .fetchOneInto(Long.class);
 
@@ -72,9 +69,9 @@ public class JobLogRepository {
         }
 
         List<JobLogVO> list = dsl.select()
-                .from(table(TABLE))
+                .from(SYS_JOB_LOG)
                 .where(condition)
-                .orderBy(field("start_time").desc())
+                .orderBy(SYS_JOB_LOG.START_TIME.desc())
                 .offset(offset)
                 .limit(size)
                 .fetch(this::toVO);
@@ -88,32 +85,32 @@ public class JobLogRepository {
     public void insert(Long jobId, String jobName, String jobGroup, String invokeTarget,
                        int status, String errorMsg, LocalDateTime startTime, LocalDateTime endTime,
                        long duration) {
-        dsl.insertInto(table(TABLE))
-                .set(field("id"), idGenerator.nextId())
-                .set(field("job_id"), jobId)
-                .set(field("job_name"), jobName)
-                .set(field("job_group"), jobGroup)
-                .set(field("invoke_target"), invokeTarget)
-                .set(field("status"), status)
-                .set(field("error_msg"), errorMsg)
-                .set(field("start_time"), startTime)
-                .set(field("end_time"), endTime)
-                .set(field("duration"), duration)
+        dsl.insertInto(SYS_JOB_LOG)
+                .set(SYS_JOB_LOG.ID, idGenerator.nextId())
+                .set(SYS_JOB_LOG.JOB_ID, jobId)
+                .set(SYS_JOB_LOG.JOB_NAME, jobName)
+                .set(SYS_JOB_LOG.JOB_GROUP, jobGroup)
+                .set(SYS_JOB_LOG.INVOKE_TARGET, invokeTarget)
+                .set(SYS_JOB_LOG.STATUS, status)
+                .set(SYS_JOB_LOG.ERROR_MSG, errorMsg)
+                .set(SYS_JOB_LOG.START_TIME, startTime)
+                .set(SYS_JOB_LOG.END_TIME, endTime)
+                .set(SYS_JOB_LOG.DURATION, duration)
                 .execute();
     }
 
     private JobLogVO toVO(Record r) {
         return new JobLogVO(
-                r.get("id", Long.class),
-                r.get("job_id", Long.class),
-                r.get("job_name", String.class),
-                r.get("job_group", String.class),
-                r.get("invoke_target", String.class),
-                r.get("status", Integer.class),
-                r.get("error_msg", String.class),
-                r.get("start_time", LocalDateTime.class),
-                r.get("end_time", LocalDateTime.class),
-                r.get("duration", Long.class)
+                r.get(SYS_JOB_LOG.ID),
+                r.get(SYS_JOB_LOG.JOB_ID),
+                r.get(SYS_JOB_LOG.JOB_NAME),
+                r.get(SYS_JOB_LOG.JOB_GROUP),
+                r.get(SYS_JOB_LOG.INVOKE_TARGET),
+                r.get(SYS_JOB_LOG.STATUS),
+                r.get(SYS_JOB_LOG.ERROR_MSG),
+                r.get(SYS_JOB_LOG.START_TIME),
+                r.get(SYS_JOB_LOG.END_TIME),
+                r.get(SYS_JOB_LOG.DURATION)
         );
     }
 }

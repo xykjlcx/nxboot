@@ -13,16 +13,13 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static com.nxboot.generated.jooq.tables.SysLoginLog.SYS_LOGIN_LOG;
 
 /**
  * 登录日志数据访问
  */
 @Repository
 public class LoginLogRepository {
-
-    private static final String TABLE = "sys_login_log";
 
     private final DSLContext dsl;
 
@@ -38,32 +35,32 @@ public class LoginLogRepository {
         Condition condition = DSL.trueCondition();
 
         // 关键词搜索：用户名 / IP
-        Condition keywordCond = JooqHelper.keywordCondition(keyword, "username", "ip");
+        Condition keywordCond = JooqHelper.keywordCondition(keyword, SYS_LOGIN_LOG.USERNAME, SYS_LOGIN_LOG.IP);
         if (keywordCond != null) {
             condition = condition.and(keywordCond);
         }
 
         if (status != null) {
-            condition = condition.and(field("status").eq(status));
+            condition = condition.and(SYS_LOGIN_LOG.STATUS.eq(status));
         }
         if (beginTime != null) {
-            condition = condition.and(field("login_time").ge(beginTime));
+            condition = condition.and(SYS_LOGIN_LOG.LOGIN_TIME.ge(beginTime));
         }
         if (endTime != null) {
-            condition = condition.and(field("login_time").le(endTime));
+            condition = condition.and(SYS_LOGIN_LOG.LOGIN_TIME.le(endTime));
         }
 
         long total = dsl.selectCount()
-                .from(table(TABLE))
+                .from(SYS_LOGIN_LOG)
                 .where(condition)
                 .fetchOneInto(Long.class);
 
         if (total == 0) return PageResult.empty();
 
         List<LoginLogVO> list = dsl.select()
-                .from(table(TABLE))
+                .from(SYS_LOGIN_LOG)
                 .where(condition)
-                .orderBy(field("login_time").desc())
+                .orderBy(SYS_LOGIN_LOG.LOGIN_TIME.desc())
                 .offset(offset).limit(size)
                 .fetch(this::toVO);
 
@@ -74,26 +71,26 @@ public class LoginLogRepository {
      * 插入登录日志
      */
     public void insert(String username, String ip, String userAgent, int status, String message) {
-        dsl.insertInto(table(TABLE))
-                .set(field("id"), SnowflakeIdGenerator.getInstance().nextId())
-                .set(field("username"), username)
-                .set(field("ip"), ip)
-                .set(field("user_agent"), userAgent)
-                .set(field("status"), status)
-                .set(field("message"), message)
-                .set(field("login_time"), LocalDateTime.now())
+        dsl.insertInto(SYS_LOGIN_LOG)
+                .set(SYS_LOGIN_LOG.ID, SnowflakeIdGenerator.getInstance().nextId())
+                .set(SYS_LOGIN_LOG.USERNAME, username)
+                .set(SYS_LOGIN_LOG.IP, ip)
+                .set(SYS_LOGIN_LOG.USER_AGENT, userAgent)
+                .set(SYS_LOGIN_LOG.STATUS, status)
+                .set(SYS_LOGIN_LOG.MESSAGE, message)
+                .set(SYS_LOGIN_LOG.LOGIN_TIME, LocalDateTime.now())
                 .execute();
     }
 
     private LoginLogVO toVO(Record r) {
         return new LoginLogVO(
-                r.get("id", Long.class),
-                r.get("username", String.class),
-                r.get("ip", String.class),
-                r.get("user_agent", String.class),
-                r.get("status", Integer.class),
-                r.get("message", String.class),
-                r.get("login_time", LocalDateTime.class)
+                r.get(SYS_LOGIN_LOG.ID),
+                r.get(SYS_LOGIN_LOG.USERNAME),
+                r.get(SYS_LOGIN_LOG.IP),
+                r.get(SYS_LOGIN_LOG.USER_AGENT),
+                r.get(SYS_LOGIN_LOG.STATUS),
+                r.get(SYS_LOGIN_LOG.MESSAGE),
+                r.get(SYS_LOGIN_LOG.LOGIN_TIME)
         );
     }
 }
