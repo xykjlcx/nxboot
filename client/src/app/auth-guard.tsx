@@ -3,14 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { Result, Button } from "antd";
 import axios from "axios";
 import { useAuth } from "@/shared/hooks/useAuth";
-
-/** 移除 index.html 中的全局加载页（带 fade-out 动画） */
-function dismissGlobalLoading() {
-  const el = document.getElementById("app-loading");
-  if (!el) return;
-  el.classList.add("fade-out");
-  setTimeout(() => el.remove(), 300);
-}
+import { dismissGlobalLoading } from "@/shared/utils/loading";
 
 /** 路由守卫：未登录跳 /login，已登录但未加载用户信息则 fetchUser + fetchMenus */
 export function AuthGuard() {
@@ -50,14 +43,7 @@ export function AuthGuard() {
     }
   }, [token, user, loadAuth]);
 
-  // 认证完成（成功或无权限），移除全局加载页
-  useEffect(() => {
-    if (user && menusFetched) {
-      dismissGlobalLoading();
-    }
-  }, [user, menusFetched]);
-
-  // 未登录
+  // 未登录 → 移除全局加载，跳登录页
   if (!token) {
     dismissGlobalLoading();
     return <Navigate to="/login" replace />;

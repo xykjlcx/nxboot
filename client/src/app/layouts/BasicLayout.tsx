@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Layout, Menu, Dropdown, Button, Popover, Breadcrumb, Tooltip, Watermark, type MenuProps } from "antd";
 // 全量导入：菜单图标名来自数据库（sys_menu.icon），运行时动态解析，
@@ -9,6 +9,7 @@ import { useAuth, type MenuVO } from "@/shared/hooks/useAuth";
 import { useTheme } from "@/shared/hooks/useTheme";
 import { usePreferences } from "@/shared/stores/preferences";
 import { resolveMenuPath } from "@/shared/utils/menu";
+import { dismissGlobalLoading } from "@/shared/utils/loading";
 import styles from "./BasicLayout.module.css";
 
 const { Header, Sider, Content } = Layout;
@@ -130,6 +131,10 @@ export function BasicLayout() {
   const prefs = usePreferences();
 
   const toggleCollapsed = () => prefs.update({ sidebarCollapsed: !prefs.sidebarCollapsed });
+
+  // 布局首次渲染完成 → 移除全局品牌加载页
+  // 此时 AuthGuard 已通过、Suspense 懒加载已完成、侧边栏+Header 已渲染
+  useEffect(() => { dismissGlobalLoading(); }, []);
 
   // 将后端菜单树转换为前端导航配置
   const subsystems = useMemo(() => menusToSubsystems(backendMenus), [backendMenus]);

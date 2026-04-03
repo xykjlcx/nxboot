@@ -1,10 +1,8 @@
-import { Row, Col, Card, Progress, Descriptions, Spin, Result, Button } from "antd";
+import { Row, Col, Card, Progress, Descriptions, Result, Button, Spin } from "antd";
 import { useMonitorServer } from "../api";
 
 function Monitor() {
   const { data, isLoading, isError, error, refetch } = useMonitorServer();
-
-  if (isLoading) return <Spin tip="加载中..." style={{ display: "block", marginTop: 100 }} />;
 
   if (isError) {
     return (
@@ -17,7 +15,20 @@ function Monitor() {
     );
   }
 
-  if (!data) return <Result status="warning" title="暂无数据" />;
+  if (isLoading || !data) {
+    return (
+      <Spin spinning size="small">
+        {/* 占位骨架：保持 4 列卡片布局，避免加载后布局跳动 */}
+        <Row gutter={[16, 16]}>
+          {[1, 2, 3, 4].map((i) => (
+            <Col key={i} xs={24} sm={12} xl={6}>
+              <Card style={{ height: 260 }} />
+            </Col>
+          ))}
+        </Row>
+      </Spin>
+    );
+  }
 
   const { cpu, memory, jvm, disk } = data;
   const usageColor = (v: number) => (v > 90 ? "#ff4d4f" : v > 70 ? "#faad14" : "#52c41a");
