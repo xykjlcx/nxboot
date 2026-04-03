@@ -1,5 +1,6 @@
 package com.nxboot.system.file.controller;
 
+import com.nxboot.common.annotation.Log;
 import com.nxboot.common.base.PageQuery;
 import com.nxboot.common.base.PageResult;
 import com.nxboot.common.result.R;
@@ -25,6 +26,7 @@ public class FileController {
     /**
      * 上传文件
      */
+    @Log(module = "文件管理", operation = "上传文件")
     @PostMapping("/upload")
     @PreAuthorize("@perm.has('system:file:upload')")
     public R<FileVO> upload(@RequestParam("file") MultipartFile file) {
@@ -54,6 +56,7 @@ public class FileController {
     /**
      * 删除文件
      */
+    @Log(module = "文件管理", operation = "删除文件")
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.has('system:file:delete')")
     public R<Void> delete(@PathVariable Long id) {

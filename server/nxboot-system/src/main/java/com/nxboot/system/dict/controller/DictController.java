@@ -1,5 +1,6 @@
 package com.nxboot.system.dict.controller;
 
+import com.nxboot.common.annotation.Log;
 import com.nxboot.common.base.PageQuery;
 import com.nxboot.common.base.PageResult;
 import com.nxboot.common.result.R;
@@ -43,12 +44,14 @@ public class DictController {
         return R.ok(dictService.getTypeById(id));
     }
 
+    @Log(module = "字典管理", operation = "新增字典类型")
     @PostMapping("/types")
     @PreAuthorize("@perm.has('system:dict:create')")
     public R<Long> createType(@Valid @RequestBody DictCommand.TypeCreate cmd) {
         return R.ok(dictService.createType(cmd));
     }
 
+    @Log(module = "字典管理", operation = "修改字典类型")
     @PutMapping("/types/{id}")
     @PreAuthorize("@perm.has('system:dict:update')")
     public R<Void> updateType(@PathVariable Long id, @Valid @RequestBody DictCommand.TypeUpdate cmd) {
@@ -56,6 +59,7 @@ public class DictController {
         return R.ok();
     }
 
+    @Log(module = "字典管理", operation = "删除字典类型")
     @DeleteMapping("/types/{id}")
     @PreAuthorize("@perm.has('system:dict:delete')")
     public R<Void> deleteType(@PathVariable Long id) {
@@ -77,12 +81,14 @@ public class DictController {
         return R.ok(dictService.getDataById(id));
     }
 
+    @Log(module = "字典管理", operation = "新增字典数据")
     @PostMapping("/data")
     @PreAuthorize("@perm.has('system:dict:create')")
     public R<Long> createData(@Valid @RequestBody DictCommand.DataCreate cmd) {
         return R.ok(dictService.createData(cmd));
     }
 
+    @Log(module = "字典管理", operation = "修改字典数据")
     @PutMapping("/data/{id}")
     @PreAuthorize("@perm.has('system:dict:update')")
     public R<Void> updateData(@PathVariable Long id, @Valid @RequestBody DictCommand.DataUpdate cmd) {
@@ -90,6 +96,7 @@ public class DictController {
         return R.ok();
     }
 
+    @Log(module = "字典管理", operation = "删除字典数据")
     @DeleteMapping("/data/{id}")
     @PreAuthorize("@perm.has('system:dict:delete')")
     public R<Void> deleteData(@PathVariable Long id) {

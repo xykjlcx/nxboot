@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PostConstruct;
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -41,11 +42,14 @@ public class JobService {
     /** 运行中的任务 */
     private final Map<Long, ScheduledFuture<?>> runningJobs = new ConcurrentHashMap<>();
 
+    private final JobLogService jobLogService;
+
     public JobService(JobRepository jobRepository, TaskScheduler taskScheduler,
-                      ApplicationContext applicationContext) {
+                      ApplicationContext applicationContext, JobLogService jobLogService) {
         this.jobRepository = jobRepository;
         this.taskScheduler = taskScheduler;
         this.applicationContext = applicationContext;
+        this.jobLogService = jobLogService;
     }
 
     /**
@@ -143,16 +147,19 @@ public class JobService {
     }
 
     /**
-     * 执行任务：解析 invokeTarget（beanName.methodName）并反射调用
+     * 执行任务：解析 invokeTarget（beanName.methodName）并反射调用，同时记录执行日志
      * <p>
      * 目标方法必须标注 @JobHandler 注解，否则拒绝执行
      */
     private void executeJob(JobVO job) {
         String invokeTarget = job.invokeTarget();
+        LocalDateTime startTime = LocalDateTime.now();
         try {
             int dotIndex = invokeTarget.lastIndexOf('.');
             if (dotIndex <= 0 || dotIndex >= invokeTarget.length() - 1) {
                 log.error("定时任务调用目标格式错误: {}", invokeTarget);
+                jobLogService.record(job.id(), job.jobName(), job.jobGroup(), invokeTarget,
+                        1, "调用目标格式错误: " + invokeTarget, startTime, LocalDateTime.now());
                 return;
             }
             String beanName = invokeTarget.substring(0, dotIndex);
@@ -164,14 +171,22 @@ public class JobService {
             // 安全校验：目标方法必须标注 @JobHandler
             if (!method.isAnnotationPresent(JobHandler.class)) {
                 log.error("定时任务安全拦截：方法 {} 未标注 @JobHandler，拒绝执行", invokeTarget);
+                jobLogService.record(job.id(), job.jobName(), job.jobGroup(), invokeTarget,
+                        1, "方法未标注 @JobHandler，拒绝执行", startTime, LocalDateTime.now());
                 return;
             }
 
             method.invoke(bean);
 
+            LocalDateTime endTime = LocalDateTime.now();
             log.info("定时任务执行成功: {}", job.jobName());
+            jobLogService.record(job.id(), job.jobName(), job.jobGroup(), invokeTarget,
+                    0, null, startTime, endTime);
         } catch (Exception e) {
+            LocalDateTime endTime = LocalDateTime.now();
             log.error("定时任务执行失败: {} - {}", job.jobName(), e.getMessage());
+            jobLogService.record(job.id(), job.jobName(), job.jobGroup(), invokeTarget,
+                    1, e.getMessage(), startTime, endTime);
         }
     }
 }

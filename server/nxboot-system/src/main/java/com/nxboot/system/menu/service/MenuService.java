@@ -25,10 +25,17 @@ public class MenuService {
     }
 
     /**
-     * 查询菜单树
+     * 查询菜单树（全量，管理用）
      */
     public List<MenuVO> tree() {
         return menuRepository.buildTree();
+    }
+
+    /**
+     * 获取用户可访问的菜单树（根据角色过滤，排除按钮类型）
+     */
+    public List<MenuVO> getUserMenuTree(Long userId) {
+        return menuRepository.buildUserMenuTree(userId);
     }
 
     /**

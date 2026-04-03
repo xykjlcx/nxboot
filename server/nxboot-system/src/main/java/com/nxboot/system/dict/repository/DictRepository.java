@@ -3,6 +3,7 @@ package com.nxboot.system.dict.repository;
 import com.nxboot.common.base.PageResult;
 import com.nxboot.common.constant.Constants;
 import com.nxboot.common.util.SnowflakeIdGenerator;
+import com.nxboot.framework.jooq.JooqHelper;
 import com.nxboot.system.dict.model.DictDataVO;
 import com.nxboot.system.dict.model.DictTypeVO;
 import org.jooq.Condition;
@@ -22,6 +23,9 @@ import static org.jooq.impl.DSL.table;
 @Repository
 public class DictRepository {
 
+    private static final String TABLE_TYPE = "sys_dict_type";
+    private static final String TABLE_DATA = "sys_dict_data";
+
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
 
@@ -33,44 +37,20 @@ public class DictRepository {
     // ========== 字典类型 ==========
 
     public PageResult<DictTypeVO> pageTypes(int offset, int size, String keyword) {
-        Condition condition = field("deleted").eq(Constants.NOT_DELETED);
-        if (keyword != null && !keyword.isBlank()) {
-            condition = condition.and(
-                    field("dict_type").likeIgnoreCase("%" + keyword + "%")
-                            .or(field("dict_name").likeIgnoreCase("%" + keyword + "%"))
-            );
-        }
-
-        long total = dsl.selectCount()
-                .from(table("sys_dict_type"))
-                .where(condition)
-                .fetchOneInto(Long.class);
-
-        if (total == 0) return PageResult.empty();
-
-        List<DictTypeVO> list = dsl.select()
-                .from(table("sys_dict_type"))
-                .where(condition)
-                .orderBy(field("create_time").desc())
-                .offset(offset).limit(size)
-                .fetch(this::toTypeVO);
-
-        return PageResult.of(list, total);
+        Condition extra = JooqHelper.keywordCondition(keyword, "dict_type", "dict_name");
+        return JooqHelper.page(dsl, TABLE_TYPE, extra, offset, size, this::toTypeVO);
     }
 
     public DictTypeVO findTypeById(Long id) {
-        Record r = dsl.select().from(table("sys_dict_type"))
-                .where(field("id").eq(id))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
-                .fetchOne();
+        Record r = JooqHelper.findById(dsl, TABLE_TYPE, id);
         return r != null ? toTypeVO(r) : null;
     }
 
     public boolean existsByDictType(String dictType) {
         return dsl.fetchExists(
-                dsl.selectOne().from(table("sys_dict_type"))
+                dsl.selectOne().from(table(TABLE_TYPE))
                         .where(field("dict_type").eq(dictType))
-                        .and(field("deleted").eq(Constants.NOT_DELETED))
+                        .and(JooqHelper.notDeleted())
         );
     }
 
@@ -79,7 +59,7 @@ public class DictRepository {
         Long id = idGenerator.nextId();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table("sys_dict_type"))
+        dsl.insertInto(table(TABLE_TYPE))
                 .set(field("id"), id)
                 .set(field("dict_type"), dictType)
                 .set(field("dict_name"), dictName)
@@ -96,7 +76,7 @@ public class DictRepository {
     }
 
     public void updateType(Long id, String dictName, Integer enabled, String remark, String operator) {
-        var step = dsl.update(table("sys_dict_type"))
+        var step = dsl.update(table(TABLE_TYPE))
                 .set(field("update_by"), operator)
                 .set(field("update_time"), LocalDateTime.now());
 
@@ -104,32 +84,25 @@ public class DictRepository {
         if (enabled != null) step = step.set(field("enabled"), enabled);
         if (remark != null) step = step.set(field("remark"), remark);
 
-        step.where(field("id").eq(id)).and(field("deleted").eq(Constants.NOT_DELETED)).execute();
+        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     public void softDeleteType(Long id, String operator) {
-        dsl.update(table("sys_dict_type"))
-                .set(field("deleted"), Constants.DELETED)
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now())
-                .where(field("id").eq(id)).execute();
+        JooqHelper.softDelete(dsl, TABLE_TYPE, id, operator);
     }
 
     // ========== 字典数据 ==========
 
     public List<DictDataVO> findDataByType(String dictType) {
-        return dsl.select().from(table("sys_dict_data"))
+        return dsl.select().from(table(TABLE_DATA))
                 .where(field("dict_type").eq(dictType))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
+                .and(JooqHelper.notDeleted())
                 .orderBy(field("sort_order").asc())
                 .fetch(this::toDataVO);
     }
 
     public DictDataVO findDataById(Long id) {
-        Record r = dsl.select().from(table("sys_dict_data"))
-                .where(field("id").eq(id))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
-                .fetchOne();
+        Record r = JooqHelper.findById(dsl, TABLE_DATA, id);
         return r != null ? toDataVO(r) : null;
     }
 
@@ -138,7 +111,7 @@ public class DictRepository {
         Long id = idGenerator.nextId();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table("sys_dict_data"))
+        dsl.insertInto(table(TABLE_DATA))
                 .set(field("id"), id)
                 .set(field("dict_type"), dictType)
                 .set(field("dict_label"), dictLabel)
@@ -158,7 +131,7 @@ public class DictRepository {
 
     public void updateData(Long id, String dictLabel, String dictValue,
                            Integer sortOrder, Integer enabled, String remark, String operator) {
-        var step = dsl.update(table("sys_dict_data"))
+        var step = dsl.update(table(TABLE_DATA))
                 .set(field("update_by"), operator)
                 .set(field("update_time"), LocalDateTime.now());
 
@@ -168,39 +141,35 @@ public class DictRepository {
         if (enabled != null) step = step.set(field("enabled"), enabled);
         if (remark != null) step = step.set(field("remark"), remark);
 
-        step.where(field("id").eq(id)).and(field("deleted").eq(Constants.NOT_DELETED)).execute();
+        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     public void softDeleteData(Long id, String operator) {
-        dsl.update(table("sys_dict_data"))
-                .set(field("deleted"), Constants.DELETED)
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now())
-                .where(field("id").eq(id)).execute();
+        JooqHelper.softDelete(dsl, TABLE_DATA, id, operator);
     }
 
     private DictTypeVO toTypeVO(Record r) {
-        Integer enabledVal = r.get(field("enabled", Integer.class));
+        Integer enabledVal = r.get("enabled", Integer.class);
         return new DictTypeVO(
-                r.get(field("id", Long.class)),
-                r.get(field("dict_type", String.class)),
-                r.get(field("dict_name", String.class)),
+                r.get("id", Long.class),
+                r.get("dict_type", String.class),
+                r.get("dict_name", String.class),
                 enabledVal != null && enabledVal == 1,
-                r.get(field("remark", String.class)),
+                r.get("remark", String.class),
                 r.get("create_time", LocalDateTime.class)
         );
     }
 
     private DictDataVO toDataVO(Record r) {
-        Integer enabledVal = r.get(field("enabled", Integer.class));
+        Integer enabledVal = r.get("enabled", Integer.class);
         return new DictDataVO(
-                r.get(field("id", Long.class)),
-                r.get(field("dict_type", String.class)),
-                r.get(field("dict_label", String.class)),
-                r.get(field("dict_value", String.class)),
-                r.get(field("sort_order", Integer.class)),
+                r.get("id", Long.class),
+                r.get("dict_type", String.class),
+                r.get("dict_label", String.class),
+                r.get("dict_value", String.class),
+                r.get("sort_order", Integer.class),
                 enabledVal != null && enabledVal == 1,
-                r.get(field("remark", String.class)),
+                r.get("remark", String.class),
                 r.get("create_time", LocalDateTime.class)
         );
     }

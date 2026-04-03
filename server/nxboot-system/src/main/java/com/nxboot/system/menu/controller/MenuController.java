@@ -1,5 +1,6 @@
 package com.nxboot.system.menu.controller;
 
+import com.nxboot.common.annotation.Log;
 import com.nxboot.common.result.R;
 import com.nxboot.system.menu.model.MenuCommand;
 import com.nxboot.system.menu.model.MenuVO;
@@ -47,12 +48,14 @@ public class MenuController {
         return R.ok(menuService.getById(id));
     }
 
+    @Log(module = "菜单管理", operation = "新增菜单")
     @PostMapping
     @PreAuthorize("@perm.has('system:menu:create')")
     public R<Long> create(@Valid @RequestBody MenuCommand.Create cmd) {
         return R.ok(menuService.create(cmd));
     }
 
+    @Log(module = "菜单管理", operation = "修改菜单")
     @PutMapping("/{id}")
     @PreAuthorize("@perm.has('system:menu:update')")
     public R<Void> update(@PathVariable Long id, @Valid @RequestBody MenuCommand.Update cmd) {
@@ -60,6 +63,7 @@ public class MenuController {
         return R.ok();
     }
 
+    @Log(module = "菜单管理", operation = "删除菜单")
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.has('system:menu:delete')")
     public R<Void> delete(@PathVariable Long id) {

@@ -2,6 +2,7 @@ package com.nxboot.system.menu.repository;
 
 import com.nxboot.common.constant.Constants;
 import com.nxboot.common.util.SnowflakeIdGenerator;
+import com.nxboot.framework.jooq.JooqHelper;
 import com.nxboot.system.menu.model.MenuVO;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -22,6 +23,8 @@ import static org.jooq.impl.DSL.table;
 @Repository
 public class MenuRepository {
 
+    private static final String TABLE = "sys_menu";
+
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
 
@@ -35,14 +38,14 @@ public class MenuRepository {
      */
     public List<MenuVO> findAll() {
         return dsl.select()
-                .from(table("sys_menu"))
-                .where(field("deleted").eq(Constants.NOT_DELETED))
+                .from(table(TABLE))
+                .where(JooqHelper.notDeleted())
                 .orderBy(field("sort_order").asc())
                 .fetch(r -> toVO(r));
     }
 
     /**
-     * 构建菜单树
+     * 构建菜单树（全量）
      */
     public List<MenuVO> buildTree() {
         List<MenuVO> allMenus = findAll();
@@ -50,14 +53,59 @@ public class MenuRepository {
     }
 
     /**
+     * 构建用户可访问的菜单树（根据角色过滤，排除按钮类型）
+     */
+    public List<MenuVO> buildUserMenuTree(Long userId) {
+        // 判断是否为管理员
+        boolean isAdmin = dsl.fetchExists(
+                dsl.selectOne()
+                        .from(table("sys_user_role"))
+                        .join(table("sys_role")).on(field("sys_user_role.role_id").eq(field("sys_role.id")))
+                        .where(field("sys_user_role.user_id").eq(userId))
+                        .and(field("sys_role.role_key").eq(Constants.ROLE_ADMIN))
+                        .and(field("sys_role.deleted").eq(Constants.NOT_DELETED))
+        );
+
+        List<MenuVO> menus;
+        if (isAdmin) {
+            // 管理员：返回所有目录和菜单（排除按钮）
+            menus = dsl.select()
+                    .from(table(TABLE))
+                    .where(JooqHelper.notDeleted())
+                    .and(field("menu_type").ne("F"))
+                    .and(field("enabled").eq(Constants.ENABLED))
+                    .orderBy(field("sort_order").asc())
+                    .fetch(this::toVO);
+        } else {
+            // 非管理员：先查角色关联的菜单 ID，再查菜单
+            List<Long> menuIds = dsl.selectDistinct(field("menu_id", Long.class))
+                    .from(table("sys_role_menu"))
+                    .join(table("sys_user_role")).on(field("sys_role_menu.role_id").eq(field("sys_user_role.role_id")))
+                    .where(field("sys_user_role.user_id").eq(userId))
+                    .fetchInto(Long.class);
+
+            if (menuIds.isEmpty()) {
+                return List.of();
+            }
+
+            menus = dsl.select()
+                    .from(table(TABLE))
+                    .where(field("id").in(menuIds))
+                    .and(JooqHelper.notDeleted())
+                    .and(field("menu_type").ne("F"))
+                    .and(field("enabled").eq(Constants.ENABLED))
+                    .orderBy(field("sort_order").asc())
+                    .fetch(this::toVO);
+        }
+
+        return buildTree(menus, 0L);
+    }
+
+    /**
      * 根据 ID 查询
      */
     public MenuVO findById(Long id) {
-        Record record = dsl.select()
-                .from(table("sys_menu"))
-                .where(field("id").eq(id))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
-                .fetchOne();
+        Record record = JooqHelper.findById(dsl, TABLE, id);
         return record != null ? toVO(record) : null;
     }
 
@@ -70,7 +118,7 @@ public class MenuRepository {
         Long id = idGenerator.nextId();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table("sys_menu"))
+        dsl.insertInto(table(TABLE))
                 .set(field("id"), id)
                 .set(field("parent_id"), parentId != null ? parentId : 0L)
                 .set(field("menu_name"), menuName)
@@ -98,7 +146,7 @@ public class MenuRepository {
     public void update(Long id, Long parentId, String menuName, String menuType, String path,
                        String component, String permission, String icon,
                        Integer sortOrder, Integer visible, Integer enabled, String operator) {
-        var step = dsl.update(table("sys_menu"))
+        var step = dsl.update(table(TABLE))
                 .set(field("update_by"), operator)
                 .set(field("update_time"), LocalDateTime.now());
 
@@ -113,21 +161,14 @@ public class MenuRepository {
         if (visible != null) step = step.set(field("visible"), visible);
         if (enabled != null) step = step.set(field("enabled"), enabled);
 
-        step.where(field("id").eq(id))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
-                .execute();
+        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     /**
      * 逻辑删除
      */
     public void softDelete(Long id, String operator) {
-        dsl.update(table("sys_menu"))
-                .set(field("deleted"), Constants.DELETED)
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now())
-                .where(field("id").eq(id))
-                .execute();
+        JooqHelper.softDelete(dsl, TABLE, id, operator);
     }
 
     /**
@@ -136,9 +177,9 @@ public class MenuRepository {
     public boolean hasChildren(Long parentId) {
         return dsl.fetchExists(
                 dsl.selectOne()
-                        .from(table("sys_menu"))
+                        .from(table(TABLE))
                         .where(field("parent_id").eq(parentId))
-                        .and(field("deleted").eq(Constants.NOT_DELETED))
+                        .and(JooqHelper.notDeleted())
         );
     }
 
@@ -165,18 +206,18 @@ public class MenuRepository {
     }
 
     private MenuVO toVO(Record r) {
-        Integer visibleVal = r.get(field("visible", Integer.class));
-        Integer enabledVal = r.get(field("enabled", Integer.class));
+        Integer visibleVal = r.get("visible", Integer.class);
+        Integer enabledVal = r.get("enabled", Integer.class);
         return new MenuVO(
-                r.get(field("id", Long.class)),
-                r.get(field("parent_id", Long.class)),
-                r.get(field("menu_name", String.class)),
-                r.get(field("menu_type", String.class)),
-                r.get(field("path", String.class)),
-                r.get(field("component", String.class)),
-                r.get(field("permission", String.class)),
-                r.get(field("icon", String.class)),
-                r.get(field("sort_order", Integer.class)),
+                r.get("id", Long.class),
+                r.get("parent_id", Long.class),
+                r.get("menu_name", String.class),
+                r.get("menu_type", String.class),
+                r.get("path", String.class),
+                r.get("component", String.class),
+                r.get("permission", String.class),
+                r.get("icon", String.class),
+                r.get("sort_order", Integer.class),
                 visibleVal != null && visibleVal == 1,
                 enabledVal != null && enabledVal == 1,
                 r.get("create_time", LocalDateTime.class),

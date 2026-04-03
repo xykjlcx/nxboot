@@ -1,5 +1,6 @@
 package com.nxboot.system.role.controller;
 
+import com.nxboot.common.annotation.Log;
 import com.nxboot.common.base.PageQuery;
 import com.nxboot.common.base.PageResult;
 import com.nxboot.common.result.R;
@@ -46,12 +47,14 @@ public class RoleController {
         return R.ok(roleService.getById(id));
     }
 
+    @Log(module = "角色管理", operation = "新增角色")
     @PostMapping
     @PreAuthorize("@perm.has('system:role:create')")
     public R<Long> create(@Valid @RequestBody RoleCommand.Create cmd) {
         return R.ok(roleService.create(cmd));
     }
 
+    @Log(module = "角色管理", operation = "修改角色")
     @PutMapping("/{id}")
     @PreAuthorize("@perm.has('system:role:update')")
     public R<Void> update(@PathVariable Long id, @Valid @RequestBody RoleCommand.Update cmd) {
@@ -59,6 +62,7 @@ public class RoleController {
         return R.ok();
     }
 
+    @Log(module = "角色管理", operation = "删除角色")
     @DeleteMapping("/{id}")
     @PreAuthorize("@perm.has('system:role:delete')")
     public R<Void> delete(@PathVariable Long id) {

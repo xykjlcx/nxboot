@@ -7,17 +7,15 @@ import com.nxboot.common.exception.ErrorCode;
 import com.nxboot.common.util.AssertUtils;
 import com.nxboot.common.util.SnowflakeIdGenerator;
 import com.nxboot.framework.security.SecurityUtils;
+import com.nxboot.framework.storage.FileStorage;
 import com.nxboot.system.file.model.FileVO;
 import org.jooq.DSLContext;
 import org.jooq.Record;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,23 +27,21 @@ import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
 
 /**
- * 文件服务
+ * 文件服务——通过 FileStorage 接口屏蔽存储后端差异（本地/OSS）。
  */
 @Service
 public class FileService {
 
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
-    private final String uploadDir;
+    private final FileStorage fileStorage;
 
-    public FileService(DSLContext dsl, SnowflakeIdGenerator idGenerator,
-                       @Value("${nxboot.file.upload-dir}") String uploadDir) {
+    public FileService(DSLContext dsl, SnowflakeIdGenerator idGenerator, FileStorage fileStorage) {
         this.dsl = dsl;
         this.idGenerator = idGenerator;
-        this.uploadDir = uploadDir;
+        this.fileStorage = fileStorage;
     }
 
-    /** 文件名最大长度 */
     private static final int MAX_FILE_NAME_LENGTH = 200;
 
     /**
@@ -63,17 +59,14 @@ public class FileService {
             extension = originalName.substring(originalName.lastIndexOf("."));
         }
 
-        // 按日期分目录存储
+        // 按日期分目录
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
         String fileName = UUID.randomUUID().toString().replace("-", "") + extension;
         String relativePath = datePath + "/" + fileName;
 
-        Path targetDir = Paths.get(uploadDir, datePath);
-        Path targetFile = Paths.get(uploadDir, relativePath);
-
+        // 委托给存储后端
         try {
-            Files.createDirectories(targetDir);
-            file.transferTo(targetFile.toFile());
+            fileStorage.upload(relativePath, file.getInputStream(), file.getContentType());
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.INTERNAL_ERROR, "文件上传失败: " + e.getMessage());
         }
@@ -99,7 +92,7 @@ public class FileService {
     }
 
     /**
-     * 分页查询文件
+     * 分页查询
      */
     public PageResult<FileVO> page(PageQuery query) {
         long total = dsl.selectCount()
@@ -138,34 +131,23 @@ public class FileService {
                 .fetchOne();
         AssertUtils.notNull(r, "文件", id);
 
-        // 删除物理文件
         String filePath = r.get(field("file_path", String.class));
-        try {
-            Files.deleteIfExists(Paths.get(uploadDir, filePath));
-        } catch (IOException e) {
-            // 物理文件删除失败不阻塞记录删除
-        }
+        fileStorage.delete(filePath);
 
         dsl.deleteFrom(table("sys_file"))
                 .where(field("id").eq(id))
                 .execute();
     }
 
-    /**
-     * 清理文件名：去掉路径穿越字符、非法字符，限制长度
-     */
     private String sanitizeFileName(String originalName) {
         if (originalName == null || originalName.isBlank()) {
             return "unnamed";
         }
-        // 只保留文件名部分，去掉路径
         String name = Paths.get(originalName).getFileName().toString();
-        // 去掉非法字符
         name = name.replaceAll("[\\\\/:*?\"<>|]", "_");
         if (name.isBlank() || name.equals("..") || name.equals(".")) {
             return "unnamed";
         }
-        // 限制文件名长度
         if (name.length() > MAX_FILE_NAME_LENGTH) {
             String ext = "";
             int dotIdx = name.lastIndexOf(".");
@@ -179,14 +161,14 @@ public class FileService {
 
     private FileVO toVO(Record r) {
         return new FileVO(
-                r.get(field("id", Long.class)),
-                r.get(field("file_name", String.class)),
-                r.get(field("original_name", String.class)),
-                r.get(field("file_path", String.class)),
-                r.get(field("file_size", Long.class)),
-                r.get(field("file_type", String.class)),
-                r.get(field("create_by", String.class)),
-                r.get(field("create_time", LocalDateTime.class))
+                r.get("id", Long.class),
+                r.get("file_name", String.class),
+                r.get("original_name", String.class),
+                r.get("file_path", String.class),
+                r.get("file_size", Long.class),
+                r.get("file_type", String.class),
+                r.get("create_by", String.class),
+                r.get("create_time", LocalDateTime.class)
         );
     }
 }

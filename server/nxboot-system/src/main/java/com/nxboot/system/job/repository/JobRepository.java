@@ -3,6 +3,7 @@ package com.nxboot.system.job.repository;
 import com.nxboot.common.base.PageResult;
 import com.nxboot.common.constant.Constants;
 import com.nxboot.common.util.SnowflakeIdGenerator;
+import com.nxboot.framework.jooq.JooqHelper;
 import com.nxboot.system.job.model.JobVO;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -21,6 +22,8 @@ import static org.jooq.impl.DSL.table;
 @Repository
 public class JobRepository {
 
+    private static final String TABLE = "sys_job";
+
     private final DSLContext dsl;
     private final SnowflakeIdGenerator idGenerator;
 
@@ -30,44 +33,20 @@ public class JobRepository {
     }
 
     public PageResult<JobVO> page(int offset, int size, String keyword) {
-        Condition condition = field("deleted").eq(Constants.NOT_DELETED);
-        if (keyword != null && !keyword.isBlank()) {
-            condition = condition.and(
-                    field("job_name").likeIgnoreCase("%" + keyword + "%")
-                            .or(field("invoke_target").likeIgnoreCase("%" + keyword + "%"))
-            );
-        }
-
-        long total = dsl.selectCount()
-                .from(table("sys_job"))
-                .where(condition)
-                .fetchOneInto(Long.class);
-
-        if (total == 0) return PageResult.empty();
-
-        List<JobVO> list = dsl.select()
-                .from(table("sys_job"))
-                .where(condition)
-                .orderBy(field("create_time").desc())
-                .offset(offset).limit(size)
-                .fetch(this::toVO);
-
-        return PageResult.of(list, total);
+        Condition extra = JooqHelper.keywordCondition(keyword, "job_name", "invoke_target");
+        return JooqHelper.page(dsl, TABLE, extra, offset, size, this::toVO);
     }
 
     public List<JobVO> findAllEnabled() {
         return dsl.select()
-                .from(table("sys_job"))
-                .where(field("deleted").eq(Constants.NOT_DELETED))
+                .from(table(TABLE))
+                .where(JooqHelper.notDeleted())
                 .and(field("enabled").eq(Constants.ENABLED))
                 .fetch(this::toVO);
     }
 
     public JobVO findById(Long id) {
-        Record r = dsl.select().from(table("sys_job"))
-                .where(field("id").eq(id))
-                .and(field("deleted").eq(Constants.NOT_DELETED))
-                .fetchOne();
+        Record r = JooqHelper.findById(dsl, TABLE, id);
         return r != null ? toVO(r) : null;
     }
 
@@ -77,7 +56,7 @@ public class JobRepository {
         Long id = idGenerator.nextId();
         LocalDateTime now = LocalDateTime.now();
 
-        dsl.insertInto(table("sys_job"))
+        dsl.insertInto(table(TABLE))
                 .set(field("id"), id)
                 .set(field("job_name"), jobName)
                 .set(field("job_group"), jobGroup != null ? jobGroup : "DEFAULT")
@@ -100,7 +79,7 @@ public class JobRepository {
     public void update(Long id, String jobName, String jobGroup, String invokeTarget,
                        String cronExpression, Integer misfirePolicy, Integer concurrent,
                        Integer enabled, String remark, String operator) {
-        var step = dsl.update(table("sys_job"))
+        var step = dsl.update(table(TABLE))
                 .set(field("update_by"), operator)
                 .set(field("update_time"), LocalDateTime.now());
 
@@ -113,29 +92,25 @@ public class JobRepository {
         if (enabled != null) step = step.set(field("enabled"), enabled);
         if (remark != null) step = step.set(field("remark"), remark);
 
-        step.where(field("id").eq(id)).and(field("deleted").eq(Constants.NOT_DELETED)).execute();
+        step.where(field("id").eq(id)).and(JooqHelper.notDeleted()).execute();
     }
 
     public void softDelete(Long id, String operator) {
-        dsl.update(table("sys_job"))
-                .set(field("deleted"), Constants.DELETED)
-                .set(field("update_by"), operator)
-                .set(field("update_time"), LocalDateTime.now())
-                .where(field("id").eq(id)).execute();
+        JooqHelper.softDelete(dsl, TABLE, id, operator);
     }
 
     private JobVO toVO(Record r) {
-        Integer enabledVal = r.get(field("enabled", Integer.class));
+        Integer enabledVal = r.get("enabled", Integer.class);
         return new JobVO(
-                r.get(field("id", Long.class)),
-                r.get(field("job_name", String.class)),
-                r.get(field("job_group", String.class)),
-                r.get(field("invoke_target", String.class)),
-                r.get(field("cron_expression", String.class)),
-                r.get(field("misfire_policy", Integer.class)),
-                r.get(field("concurrent", Integer.class)),
+                r.get("id", Long.class),
+                r.get("job_name", String.class),
+                r.get("job_group", String.class),
+                r.get("invoke_target", String.class),
+                r.get("cron_expression", String.class),
+                r.get("misfire_policy", Integer.class),
+                r.get("concurrent", Integer.class),
                 enabledVal != null && enabledVal == 1,
-                r.get(field("remark", String.class)),
+                r.get("remark", String.class),
                 r.get("create_time", LocalDateTime.class)
         );
     }

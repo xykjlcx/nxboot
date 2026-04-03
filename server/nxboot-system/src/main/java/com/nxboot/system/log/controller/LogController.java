@@ -26,8 +26,9 @@ public class LogController {
     public R<PageResult<OperationLogVO>> page(
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(required = false) String keyword) {
-        return R.ok(logService.page(new PageQuery(pageNum, pageSize), keyword));
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status) {
+        return R.ok(logService.page(new PageQuery(pageNum, pageSize), keyword, status));
     }
 
     @GetMapping("/{id}")

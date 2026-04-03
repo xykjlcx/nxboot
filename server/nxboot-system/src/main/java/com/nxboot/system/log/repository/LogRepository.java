@@ -1,6 +1,8 @@
 package com.nxboot.system.log.repository;
 
 import com.nxboot.common.base.PageResult;
+import com.nxboot.common.util.SnowflakeIdGenerator;
+import com.nxboot.framework.jooq.JooqHelper;
 import com.nxboot.system.log.model.OperationLogVO;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -20,31 +22,37 @@ import static org.jooq.impl.DSL.table;
 @Repository
 public class LogRepository {
 
+    private static final String TABLE = "sys_log";
+
     private final DSLContext dsl;
 
     public LogRepository(DSLContext dsl) {
         this.dsl = dsl;
     }
 
-    public PageResult<OperationLogVO> page(int offset, int size, String keyword) {
+    public PageResult<OperationLogVO> page(int offset, int size, String keyword, Integer status) {
+        // 日志表没有 deleted 字段，用自定义条件组合
+        Condition extra = JooqHelper.keywordCondition(keyword, "module", "operation", "operator");
+        if (status != null) {
+            Condition statusCond = field("status").eq(status);
+            extra = extra != null ? extra.and(statusCond) : statusCond;
+        }
+
+        // 日志表无软删除，直接用 DSL.trueCondition 做基础条件
         Condition condition = DSL.trueCondition();
-        if (keyword != null && !keyword.isBlank()) {
-            condition = condition.and(
-                    field("module").likeIgnoreCase("%" + keyword + "%")
-                            .or(field("operation").likeIgnoreCase("%" + keyword + "%"))
-                            .or(field("operator").likeIgnoreCase("%" + keyword + "%"))
-            );
+        if (extra != null) {
+            condition = condition.and(extra);
         }
 
         long total = dsl.selectCount()
-                .from(table("sys_log"))
+                .from(table(TABLE))
                 .where(condition)
                 .fetchOneInto(Long.class);
 
         if (total == 0) return PageResult.empty();
 
         List<OperationLogVO> list = dsl.select()
-                .from(table("sys_log"))
+                .from(table(TABLE))
                 .where(condition)
                 .orderBy(field("create_time").desc())
                 .offset(offset).limit(size)
@@ -54,27 +62,51 @@ public class LogRepository {
     }
 
     public OperationLogVO findById(Long id) {
-        Record r = dsl.select().from(table("sys_log"))
+        Record r = dsl.select().from(table(TABLE))
                 .where(field("id").eq(id))
                 .fetchOne();
         return r != null ? toVO(r) : null;
     }
 
+    /**
+     * 插入操作日志
+     */
+    public void insert(String module, String operation, String method, String requestUrl,
+                       String requestMethod, String requestParams, String responseBody,
+                       String operator, String operatorIp, Integer status, String errorMsg, Long duration) {
+        dsl.insertInto(table(TABLE))
+                .set(field("id"), SnowflakeIdGenerator.getInstance().nextId())
+                .set(field("module"), module)
+                .set(field("operation"), operation)
+                .set(field("method"), method)
+                .set(field("request_url"), requestUrl)
+                .set(field("request_method"), requestMethod)
+                .set(field("request_params"), requestParams)
+                .set(field("response_body"), responseBody)
+                .set(field("operator"), operator)
+                .set(field("operator_ip"), operatorIp)
+                .set(field("status"), status)
+                .set(field("error_msg"), errorMsg)
+                .set(field("duration"), duration)
+                .set(field("create_time"), LocalDateTime.now())
+                .execute();
+    }
+
     private OperationLogVO toVO(Record r) {
         return new OperationLogVO(
-                r.get(field("id", Long.class)),
-                r.get(field("module", String.class)),
-                r.get(field("operation", String.class)),
-                r.get(field("method", String.class)),
-                r.get(field("request_url", String.class)),
-                r.get(field("request_method", String.class)),
-                r.get(field("request_params", String.class)),
-                r.get(field("response_body", String.class)),
-                r.get(field("operator", String.class)),
-                r.get(field("operator_ip", String.class)),
-                r.get(field("status", Integer.class)),
-                r.get(field("error_msg", String.class)),
-                r.get(field("duration", Long.class)),
+                r.get("id", Long.class),
+                r.get("module", String.class),
+                r.get("operation", String.class),
+                r.get("method", String.class),
+                r.get("request_url", String.class),
+                r.get("request_method", String.class),
+                r.get("request_params", String.class),
+                r.get("response_body", String.class),
+                r.get("operator", String.class),
+                r.get("operator_ip", String.class),
+                r.get("status", Integer.class),
+                r.get("error_msg", String.class),
+                r.get("duration", Long.class),
                 r.get("create_time", LocalDateTime.class)
         );
     }

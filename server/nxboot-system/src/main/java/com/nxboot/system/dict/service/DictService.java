@@ -9,6 +9,8 @@ import com.nxboot.system.dict.model.DictCommand;
 import com.nxboot.system.dict.model.DictDataVO;
 import com.nxboot.system.dict.model.DictTypeVO;
 import com.nxboot.system.dict.repository.DictRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +64,7 @@ public class DictService {
 
     // ========== 字典数据 ==========
 
+    @Cacheable(value = "system:dict", key = "#dictType")
     public List<DictDataVO> listDataByType(String dictType) {
         return dictRepository.findDataByType(dictType);
     }
@@ -72,6 +75,7 @@ public class DictService {
         return data;
     }
 
+    @CacheEvict(value = "system:dict", allEntries = true)
     @Transactional
     public Long createData(DictCommand.DataCreate cmd) {
         String operator = SecurityUtils.getCurrentUsername();
@@ -79,6 +83,7 @@ public class DictService {
                 cmd.sortOrder(), cmd.enabled(), cmd.remark(), operator);
     }
 
+    @CacheEvict(value = "system:dict", allEntries = true)
     @Transactional
     public void updateData(Long id, DictCommand.DataUpdate cmd) {
         AssertUtils.notNull(dictRepository.findDataById(id), "字典数据", id);
@@ -87,6 +92,7 @@ public class DictService {
                 cmd.sortOrder(), cmd.enabled(), cmd.remark(), operator);
     }
 
+    @CacheEvict(value = "system:dict", allEntries = true)
     @Transactional
     public void deleteData(Long id) {
         AssertUtils.notNull(dictRepository.findDataById(id), "字典数据", id);
