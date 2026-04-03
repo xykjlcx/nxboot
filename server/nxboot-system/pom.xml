@@ -20,48 +20,12 @@
             <groupId>com.nxboot</groupId>
             <artifactId>nxboot-framework</artifactId>
         </dependency>
+
+        <!-- AOP（DataScopeAspect 需要） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
     </dependencies>
 
-    <!-- jOOQ 代码生成插件 — 暂时跳过，等数据库就绪后启用 -->
-    <!--
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.jooq</groupId>
-                <artifactId>jooq-codegen-maven</artifactId>
-                <version>${jooq.version}</version>
-                <configuration>
-                    <generator>
-                        <database>
-                            <name>org.jooq.meta.extensions.ddl.DDLDatabase</name>
-                            <properties>
-                                <property>
-                                    <key>scripts</key>
-                                    <value>../nxboot-admin/src/main/resources/db/migration/*.sql</value>
-                                </property>
-                                <property>
-                                    <key>sort</key>
-                                    <value>flyway</value>
-                                </property>
-                            </properties>
-                            <includes>sys_.*</includes>
-                            <inputSchema>public</inputSchema>
-                        </database>
-                        <target>
-                            <packageName>com.nxboot.system.generated</packageName>
-                            <directory>src/main/java</directory>
-                        </target>
-                    </generator>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.jooq</groupId>
-                        <artifactId>jooq-meta-extensions</artifactId>
-                        <version>${jooq.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-        </plugins>
-    </build>
-    -->
 </project>
