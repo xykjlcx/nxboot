@@ -456,8 +456,11 @@ pnpm build      # 生产构建
 
 - jOOQ codegen 已启用，但仅 ConfigRepository 完成迁移（POC），其他 Repository 和 JooqHelper 待迁移
 - 审计字段需手动填充（已有 JooqHelper 简化，启用 codegen 后可自动化）
+- jOOQ codegen 不含 V14-V20 新增表（sys_dept/sys_login_log/sys_job_log/sys_user_social/sys_role_dept），需重新生成
+- OAuth2 自动创建用户无默认角色分配
+- 部分页面（online/job-log/login-log/monitor）缺少 sys_menu 记录，导航中不可见
+- MonitorController 用 Thread.sleep(500) 测量 CPU，阻塞请求线程
+- 图标全量导入（`import * as Icons`），后续需优化按需加载
+- 前端 i18n 仅覆盖框架层文本，业务页面硬编码中文
 - 无代码生成器
 - 无单元测试
-- 无 EasyExcel 数据导出
-- 无 Redis 缓存层
-- 图标全量导入（`import * as Icons`），后续需优化 tree-shaking
